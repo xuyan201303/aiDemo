@@ -1,0 +1,26 @@
+{
+  "desktop": {
+    "body": 1440,
+    "viewport": 1440,
+    "sections": 5
+  },
+  "mobile": {
+    "body": 390,
+    "viewport": 390
+  },
+  "attempts": [
+    {
+      "exit_code": 1,
+      "reason": "Playwright bundled chromium_headless_shell not installed"
+    },
+    {
+      "exit_code": 1,
+      "reason": "Browser policy disallows file URL navigation; no policy changed"
+    },
+    {
+      "exit_code": 0,
+      "browser": "/usr/bin/chromium",
+      "method": "Render already-authorized HTML string using page.set_content; no navigation or network fetch"
+    }
+  ]
+}

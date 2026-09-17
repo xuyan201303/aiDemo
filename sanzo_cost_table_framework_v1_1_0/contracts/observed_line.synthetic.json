@@ -1,0 +1,1 @@
+{"case_id":"case-1","context":{"billing_unit":"PER_DELIVERY","charge_scope":"DELIVERY_ONLY","equipment":"N/A","extra_terms":"N/A","ready":true,"transport_mode":"ROAD"},"currency":"CNY","document_id":"doc-1","forwarder_id":"forwarder-A","item_id":"item-1","raw_label":"送货钱","source_id":"source-1","source_ready":true,"tenant_id":"demo-tenant","unit_price":"10"}

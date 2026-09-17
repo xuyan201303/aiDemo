@@ -1,0 +1,73 @@
+{
+  "status": "FRAMEWORK_REFERENCE_VERIFIED_NOT_PRODUCTION",
+  "framework_version": "1.0.0",
+  "recorded_at_utc": "2026-09-10T14:47:27.900106+00:00",
+  "python_version": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]",
+  "platform": "linux",
+  "unit_test_count": 46,
+  "checks": [
+    {
+      "name": "offline_unit_tests",
+      "command": [
+        "/opt/pyvenv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "working_directory": "/mnt/data/sanzo_cost_table_framework_v1_0_0/reference_core",
+      "exit_code": 0,
+      "stdout_stderr_file": "evidence/unit_tests.txt"
+    },
+    {
+      "name": "offline_demo",
+      "command": [
+        "/opt/pyvenv/bin/python",
+        "-m",
+        "quote_framework.demo"
+      ],
+      "working_directory": "/mnt/data/sanzo_cost_table_framework_v1_0_0/reference_core",
+      "exit_code": 0,
+      "stdout_stderr_file": "evidence/demo.json"
+    },
+    {
+      "name": "contract_checks",
+      "command": [
+        "/opt/pyvenv/bin/python",
+        "tools/check_contracts.py"
+      ],
+      "working_directory": "/mnt/data/sanzo_cost_table_framework_v1_0_0",
+      "exit_code": 0,
+      "stdout_stderr_file": "evidence/contract_checks.txt"
+    },
+    {
+      "name": "python_ast_parse",
+      "python_file_count": 9,
+      "exit_code": 0
+    },
+    {
+      "name": "json_syntax",
+      "exit_code": 0
+    }
+  ],
+  "real_document_sdk_calls": 0,
+  "real_openai_api_calls": 0,
+  "raw_customer_documents_processed": 0,
+  "user_repository_changes": 0,
+  "postgresql_integration_tested": false,
+  "mac_or_windows_tested": false,
+  "fixtures": "synthetic offline only",
+  "not_implemented": [
+    "production web UI and HTTP API",
+    "authentication and authorization middleware",
+    "real SDK adapter",
+    "real AI extraction and classification",
+    "PostgreSQL persistence and concurrency",
+    "document preview",
+    "Excel generation",
+    "deployment",
+    "real customer PoC"
+  ]
+}

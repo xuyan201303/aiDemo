@@ -1,0 +1,8 @@
+FROM python:3.13-slim
+LABEL org.sanzo.project="sanzo-cost-table-w1"
+RUN python -m pip install --no-cache-dir "psycopg[binary]==3.2.10"
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/workspace/backend:/workspace/sanzo_cost_table_framework_v1_1_0/reference_core
+WORKDIR /workspace
+CMD ["python", "-m", "unittest", "discover", "-s", "tests", "-p", "test_postgres.py", "-v"]

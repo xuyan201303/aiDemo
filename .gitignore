@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.env
+.env.*
+!.env.example
+build/
+dist/
+
+# Local Demo process logs and state, never review input.
+.demo-runtime/
+
+# User-provided Demo originals: preserve locally, exclude code review bundles.
+demo_inputs/

@@ -1,0 +1,9 @@
+{
+  "allow_sample_content_to_openai": true,
+  "model": "gpt-5.6-terra",
+  "max_requests": 100,
+  "credential_source": {
+    "kind": "environment",
+    "name": "OPENAI_API_KEY"
+  }
+}

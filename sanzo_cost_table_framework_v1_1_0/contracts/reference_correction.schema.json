@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sanzo:cost-table:reference-correction:v1",
+  "title": "Offline reference Correction dataclass; production adds case revision and auth",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "item_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expected_item_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "expected_memory_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "target_fee_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "new_fee_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "unit_price": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+    },
+    "replace_existing_mapping": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "item_id",
+    "expected_item_version",
+    "expected_memory_version",
+    "idempotency_key"
+  ],
+  "allOf": [
+    {
+      "not": {
+        "properties": {
+          "target_fee_id": {
+            "type": "string"
+          },
+          "new_fee_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "target_fee_id",
+          "new_fee_name"
+        ]
+      }
+    },
+    {
+      "anyOf": [
+        {
+          "properties": {
+            "target_fee_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "target_fee_id"
+          ]
+        },
+        {
+          "properties": {
+            "new_fee_name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "new_fee_name"
+          ]
+        },
+        {
+          "properties": {
+            "unit_price": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "unit_price"
+          ]
+        }
+      ]
+    },
+    {
+      "if": {
+        "properties": {
+          "replace_existing_mapping": {
+            "const": true
+          }
+        },
+        "required": [
+          "replace_existing_mapping"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "properties": {
+              "target_fee_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "target_fee_id"
+            ]
+          },
+          {
+            "properties": {
+              "new_fee_name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "new_fee_name"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

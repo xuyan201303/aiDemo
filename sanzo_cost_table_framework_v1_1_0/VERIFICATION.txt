@@ -1,0 +1,21 @@
+SANZO COST TABLE FRAMEWORK v1.1.0
+Revision date: 2026-09-11
+Status: documentation/process revision complete; offline reference tests pass.
+
+Changes: no separate PoC stage; W3 is a 3-file sales Demo with the required thin UI.
+Round 1: Excel + PDF, source preview, correction and persistence.
+Round 2: new case, third Excel, original-label -> human-confirmed fee reuse, new price.
+Meeting: Shimanos proposal -> Morita Demo -> customer Q&A.
+
+Verification executed in this container:
+- reference_core, contracts, tools: byte-identical to the v1.0.0 source archive.
+- 46 SQLite/synthetic offline unit tests: PASS (exit 0).
+- 8 reference JSON contract checks: PASS (exit 0).
+- HTML: parsed, six expandable documentation sections, no JavaScript.
+- Packaging: CRC, safe members, internal SHA256 and external archive SHA256 verified by finalizer.
+Historical v1.0.0 evidence is retained under evidence/baseline_v1_0_0; it is not mislabeled as a new run.
+
+NOT performed: true SDK/OpenAI integration, customer-file testing, the 3-file Web Demo,
+production PostgreSQL integration, native Windows/Mac testing, cloud setup, or deployment.
+The user Mac, document-processing-sdk repository and corpus processes were not accessed.
+This update does not authorize commit/push, external data upload, purchases or later stages.

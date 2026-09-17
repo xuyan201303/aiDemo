@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sanzo-cost-table-core"
+version = "0.1.0"
+description = "SANZO W1 independent business core; no real SDK or AI"
+requires-python = ">=3.11"
+dependencies = ["psycopg[binary]==3.2.10"]
+
+[tool.setuptools]
+packages = ["sanzo_core", "quote_framework"]
+package-dir = {sanzo_core = "backend/sanzo_core", quote_framework = "sanzo_cost_table_framework_v1_1_0/reference_core/quote_framework"}
+
+[tool.setuptools.package-data]
+sanzo_core = ["migrations/*.sql"]
+
+[project.scripts]
+sanzo-core-verify = "sanzo_core.cli:main"
+
+[project.optional-dependencies]
+test = ["jsonschema==4.25.1"]

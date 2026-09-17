@@ -1,0 +1,51 @@
+test_20ft_and_40ft_distinct (test_learning.LearningTests.test_20ft_and_40ft_distinct) ... ok
+test_ambiguous_prices_rejected (test_learning.LearningTests.test_ambiguous_prices_rejected) ... ok
+test_amount_only_correction_does_not_learn (test_learning.LearningTests.test_amount_only_correction_does_not_learn) ... ok
+test_boolean_version_rejected (test_learning.LearningTests.test_boolean_version_rejected) ... ok
+test_changed_payload_same_idempotency_rejected (test_learning.LearningTests.test_changed_payload_same_idempotency_rejected) ... ok
+test_classification_decision_is_not_training (test_learning.LearningTests.test_classification_decision_is_not_training) ... ok
+test_condition_added_is_not_dropped (test_learning.LearningTests.test_condition_added_is_not_dropped) ... ok
+test_conflicting_human_labels_block_reuse (test_learning.LearningTests.test_conflicting_human_labels_block_reuse) ... ok
+test_context_ready_string_rejected (test_learning.LearningTests.test_context_ready_string_rejected) ... ok
+test_cross_tenant_item_denied (test_learning.LearningTests.test_cross_tenant_item_denied) ... ok
+test_cross_tenant_target_fee_rejected (test_learning.LearningTests.test_cross_tenant_target_fee_rejected) ... ok
+test_current_correction_saved_without_eligible_memory (test_learning.LearningTests.test_current_correction_saved_without_eligible_memory) ... ok
+test_different_forwarder_not_automatically_global (test_learning.LearningTests.test_different_forwarder_not_automatically_global) ... ok
+test_different_tenant_cannot_reuse (test_learning.LearningTests.test_different_tenant_cannot_reuse) ... ok
+test_different_user_same_tenant_can_reuse (test_learning.LearningTests.test_different_user_same_tenant_can_reuse) ... ok
+test_empty_correction_rejected (test_learning.LearningTests.test_empty_correction_rejected) ... ok
+test_equipment_change_no_reuse (test_learning.LearningTests.test_equipment_change_no_reuse) ... ok
+test_existing_display_name_requires_explicit_id (test_learning.LearningTests.test_existing_display_name_requires_explicit_id) ... ok
+test_explicit_conflict_resolution_reactivates (test_learning.LearningTests.test_explicit_conflict_resolution_reactivates) ... ok
+test_idempotent_retry_does_not_duplicate_event (test_learning.LearningTests.test_idempotent_retry_does_not_duplicate_event) ... ok
+test_missing_source_triggers_reading_gate (test_learning.LearningTests.test_missing_source_triggers_reading_gate) ... ok
+test_new_currency_retained_not_reused (test_learning.LearningTests.test_new_currency_retained_not_reused) ... ok
+test_new_name_needs_ai_not_fuzzy_auto_accept (test_learning.LearningTests.test_new_name_needs_ai_not_fuzzy_auto_accept) ... ok
+test_no_implicit_reactivation_after_conflict (test_learning.LearningTests.test_no_implicit_reactivation_after_conflict) ... ok
+test_normalizer_does_not_remove_digits_or_punctuation (test_learning.LearningTests.test_normalizer_does_not_remove_digits_or_punctuation) ... ok
+test_permission_string_is_not_authorization (test_learning.LearningTests.test_permission_string_is_not_authorization) ... ok
+test_price_and_currency_not_part_of_classification_key (test_learning.LearningTests.test_price_and_currency_not_part_of_classification_key) ... ok
+test_price_change_uses_current_price (test_learning.LearningTests.test_price_change_uses_current_price) ... ok
+test_price_edit_and_learning_same_transaction (test_learning.LearningTests.test_price_edit_and_learning_same_transaction) ... ok
+test_raw_label_to_human_label_not_ai_output (test_learning.LearningTests.test_raw_label_to_human_label_not_ai_output) ... ok
+test_real_ai_adapter_is_fail_closed (test_learning.LearningTests.test_real_ai_adapter_is_fail_closed) ... ok
+test_real_sdk_adapter_is_fail_closed (test_learning.LearningTests.test_real_sdk_adapter_is_fail_closed) ... ok
+test_restart_persists_learning (test_learning.LearningTests.test_restart_persists_learning) ... ok
+test_revocation_does_not_rewrite_historical_quote (test_learning.LearningTests.test_revocation_does_not_rewrite_historical_quote) ... ok
+test_revoke_blocks_fallback_to_old_confirmations (test_learning.LearningTests.test_revoke_blocks_fallback_to_old_confirmations) ... ok
+test_source_ready_string_rejected (test_learning.LearningTests.test_source_ready_string_rejected) ... ok
+test_stale_item_version_is_rejected (test_learning.LearningTests.test_stale_item_version_is_rejected) ... ok
+test_stale_memory_rolls_back_item_and_category (test_learning.LearningTests.test_stale_memory_rolls_back_item_and_category) ... ok
+test_two_connections_stale_memory_detected (test_learning.LearningTests.test_two_connections_stale_memory_detected) ... ok
+test_unauthorized_editor_rejected (test_learning.LearningTests.test_unauthorized_editor_rejected) ... ok
+test_unknown_context_not_wildcard (test_learning.LearningTests.test_unknown_context_not_wildcard) ... ok
+test_unknown_forwarder_cannot_exact_reuse (test_learning.LearningTests.test_unknown_forwarder_cannot_exact_reuse) ... ok
+test_unseen_label_requests_classification (test_learning.LearningTests.test_unseen_label_requests_classification) ... ok
+test_unvalidated_context_not_exact_match (test_learning.LearningTests.test_unvalidated_context_not_exact_match) ... ok
+test_whitespace_only_normalization (test_learning.LearningTests.test_whitespace_only_normalization) ... ok
+test_wrong_ai_candidate_is_not_a_learned_alias (test_learning.LearningTests.test_wrong_ai_candidate_is_not_a_learned_alias) ... ok
+
+----------------------------------------------------------------------
+Ran 46 tests in 0.097s
+
+OK

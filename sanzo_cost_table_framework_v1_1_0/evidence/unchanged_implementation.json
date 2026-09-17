@@ -1,0 +1,70 @@
+[
+  {
+    "path": "reference_core/README.md",
+    "sha256": "29c634f28c60705c8973d9436a1c27ffb1c2a48e0645c3e6c160fe7101dc04eb"
+  },
+  {
+    "path": "reference_core/quote_framework/demo.py",
+    "sha256": "d6c9e8085452fcb74a3913968eaa345ad5a83de09d706eba1d70672017335e64"
+  },
+  {
+    "path": "reference_core/quote_framework/repository.py",
+    "sha256": "ea43f876dfe070df269568bcfb4fbcaf62b46bfc20dc8dabc013b60aaa81d0e5"
+  },
+  {
+    "path": "reference_core/quote_framework/ports.py",
+    "sha256": "333f5f4bb662257757ce632cce8be2d9c0b6ff8a44f3e6e3e58d08736d623f8a"
+  },
+  {
+    "path": "reference_core/quote_framework/__init__.py",
+    "sha256": "0715ef0fee5ca32338fad32ff69a02d14467f50737ddd448e32de25cc842532e"
+  },
+  {
+    "path": "reference_core/quote_framework/domain.py",
+    "sha256": "e5a17a3df37120cb316f8409c8c736423625ea01e4132a44874af031c9edd433"
+  },
+  {
+    "path": "reference_core/tests/test_learning.py",
+    "sha256": "cb15af43dc4a4d48f7223da64de0d2e831f1bc560b8c94da4e421185ae20c757"
+  },
+  {
+    "path": "contracts/reference_correction.schema.json",
+    "sha256": "b0aa68e0a87e71493d31268d49951bddd3ba3c0ef32654b2eb83064a3832c36e"
+  },
+  {
+    "path": "contracts/reference_decision.schema.json",
+    "sha256": "0bbffe3378d57066c246352eab0a29f491e72e64e313a6eb6cc352c5029b3df2"
+  },
+  {
+    "path": "contracts/decision_reuse.synthetic.json",
+    "sha256": "b6c7c4252bf70f5a55ce27dd3f45e32c504352ad19e43325241008cedeefe3e0"
+  },
+  {
+    "path": "contracts/README.md",
+    "sha256": "f4b890eeafa570dbdd29f19afc351e4a69a7da520aef9636e7d87fcb74a43a2f"
+  },
+  {
+    "path": "contracts/correction_first.synthetic.json",
+    "sha256": "8e7479237dcaf4dbc4a2ce085b81c2c4385aa3dc4d90e0734a56389124ffaf03"
+  },
+  {
+    "path": "contracts/observed_line.synthetic.json",
+    "sha256": "3685ed8778716c7bd51ac8d0ee62ae3275ec4ec4c2a505721d6f910e9d3191a2"
+  },
+  {
+    "path": "contracts/decision_unknown.synthetic.json",
+    "sha256": "40112dd0c0b4bfbe5fe9a8323c167babf7aacd36401ee82f30790d184a8fa5fd"
+  },
+  {
+    "path": "tools/check_contracts.py",
+    "sha256": "ee78fe08f3f75c65a145ddb501a3863256ffadaa1c9dc34d96e5abf728ac09c8"
+  },
+  {
+    "path": "tools/pack_review.py",
+    "sha256": "451247483b36c84342c3d96e98d5bcc4685f74b5d837bffdaf1ceb10edf9a8f9"
+  },
+  {
+    "path": "tools/verify_bundle.py",
+    "sha256": "3f72de70ea3b26aea19d9d5c0b77969b69a62d6d265523c3e9abd53efe4f15f2"
+  }
+]

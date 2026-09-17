@@ -1,0 +1,963 @@
+{
+  "schema_version": 1,
+  "origin": "MOCK_SDK",
+  "fixture_version": "sanzo-raw-fixture-v1",
+  "sample": {
+    "filename": "03_A社_次回見積.xlsx",
+    "sha256": "b2fdc4622f98064d7115186587407082a0fbc873b59dee8803a5ff51c54bba98",
+    "media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  },
+  "source_verification": {
+    "method": "LOCAL_ORIGINAL_CELL_READ_AND_LOCATION_CHECK",
+    "notice": "デモ用解析データ／SDK未接続",
+    "sdk_execution": "NOT_RUN",
+    "details": [
+      "Company is the complete A3 cell.",
+      "transport_mode preserves the complete A9 document scope; no inferred normalized mode.",
+      "Line fields preserve complete original cells in B12:H16; numeric cells retain canonical stored values and number format.",
+      "No confirmed fee names, fee IDs, AI responses or learning outcomes are present."
+    ],
+    "missing_fields": []
+  },
+  "blocks": [
+    {
+      "source_id": "sheet1-A3-company",
+      "raw_text": "SANZO Demo Forwarder A（架空）",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "A3"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "company",
+          "record_id": "sheet1-document",
+          "scope": "DOCUMENT",
+          "applies_to_record_ids": [
+            "sheet1-row-12",
+            "sheet1-row-13",
+            "sheet1-row-14",
+            "sheet1-row-15",
+            "sheet1-row-16"
+          ]
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "A3"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-A9-transport_mode",
+      "raw_text": "対象：海上輸送と付帯サービス。各行に記載した条件での単価です。",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "A9"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "transport_mode",
+          "record_id": "sheet1-document",
+          "scope": "DOCUMENT",
+          "applies_to_record_ids": [
+            "sheet1-row-12",
+            "sheet1-row-13",
+            "sheet1-row-14",
+            "sheet1-row-15",
+            "sheet1-row-16"
+          ]
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "A9"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-B12-raw_label",
+      "raw_text": "O/F 20'",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "B12"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "raw_label",
+          "record_id": "sheet1-row-12",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B12:H12"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-C12-equipment",
+      "raw_text": "20FT",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "C12"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "equipment",
+          "record_id": "sheet1-row-12",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B12:H12"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-D12-billing_unit",
+      "raw_text": "コンテナ",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "D12"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "billing_unit",
+          "record_id": "sheet1-row-12",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B12:H12"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-E12-currency",
+      "raw_text": "USD",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "E12"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "currency",
+          "record_id": "sheet1-row-12",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B12:H12"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-F12-raw_value",
+      "raw_text": "1350",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "F12"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "raw_value",
+          "record_id": "sheet1-row-12",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "n",
+          "original_number_format": "#,##0.00\"   \"",
+          "row_range": "B12:H12"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-G12-charge_scope",
+      "raw_text": "海上輸送・港間",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "G12"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "charge_scope",
+          "record_id": "sheet1-row-12",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B12:H12"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-H12-extra_terms",
+      "raw_text": "追加作業なし",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "H12"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "extra_terms",
+          "record_id": "sheet1-row-12",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B12:H12"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-B13-raw_label",
+      "raw_text": "O/F 40'",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "B13"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "raw_label",
+          "record_id": "sheet1-row-13",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B13:H13"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-C13-equipment",
+      "raw_text": "40FT",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "C13"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "equipment",
+          "record_id": "sheet1-row-13",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B13:H13"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-D13-billing_unit",
+      "raw_text": "コンテナ",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "D13"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "billing_unit",
+          "record_id": "sheet1-row-13",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B13:H13"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-E13-currency",
+      "raw_text": "USD",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "E13"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "currency",
+          "record_id": "sheet1-row-13",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B13:H13"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-F13-raw_value",
+      "raw_text": "2050",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "F13"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "raw_value",
+          "record_id": "sheet1-row-13",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "n",
+          "original_number_format": "#,##0.00\"   \"",
+          "row_range": "B13:H13"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-G13-charge_scope",
+      "raw_text": "海上輸送・港間",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "G13"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "charge_scope",
+          "record_id": "sheet1-row-13",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B13:H13"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-H13-extra_terms",
+      "raw_text": "追加作業なし",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "H13"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "extra_terms",
+          "record_id": "sheet1-row-13",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B13:H13"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-B14-raw_label",
+      "raw_text": "DOC FEE",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "B14"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "raw_label",
+          "record_id": "sheet1-row-14",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B14:H14"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-C14-equipment",
+      "raw_text": "共通",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "C14"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "equipment",
+          "record_id": "sheet1-row-14",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B14:H14"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-D14-billing_unit",
+      "raw_text": "B/L",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "D14"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "billing_unit",
+          "record_id": "sheet1-row-14",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B14:H14"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-E14-currency",
+      "raw_text": "JPY",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "E14"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "currency",
+          "record_id": "sheet1-row-14",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B14:H14"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-F14-raw_value",
+      "raw_text": "8500",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "F14"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "raw_value",
+          "record_id": "sheet1-row-14",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "n",
+          "original_number_format": "#,##0.00\"   \"",
+          "row_range": "B14:H14"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-G14-charge_scope",
+      "raw_text": "書類作成",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "G14"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "charge_scope",
+          "record_id": "sheet1-row-14",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B14:H14"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-H14-extra_terms",
+      "raw_text": "追加作業なし",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "H14"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "extra_terms",
+          "record_id": "sheet1-row-14",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B14:H14"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-B15-raw_label",
+      "raw_text": "通関手数料",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "B15"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "raw_label",
+          "record_id": "sheet1-row-15",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B15:H15"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-C15-equipment",
+      "raw_text": "共通",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "C15"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "equipment",
+          "record_id": "sheet1-row-15",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B15:H15"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-D15-billing_unit",
+      "raw_text": "申告",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "D15"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "billing_unit",
+          "record_id": "sheet1-row-15",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B15:H15"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-E15-currency",
+      "raw_text": "JPY",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "E15"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "currency",
+          "record_id": "sheet1-row-15",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B15:H15"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-F15-raw_value",
+      "raw_text": "12500",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "F15"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "raw_value",
+          "record_id": "sheet1-row-15",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "n",
+          "original_number_format": "#,##0.00\"   \"",
+          "row_range": "B15:H15"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-G15-charge_scope",
+      "raw_text": "輸入通関",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "G15"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "charge_scope",
+          "record_id": "sheet1-row-15",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B15:H15"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-H15-extra_terms",
+      "raw_text": "追加作業なし",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "H15"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "extra_terms",
+          "record_id": "sheet1-row-15",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B15:H15"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-B16-raw_label",
+      "raw_text": "配送手数料",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "B16"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "raw_label",
+          "record_id": "sheet1-row-16",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B16:H16"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-C16-equipment",
+      "raw_text": "共通",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "C16"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "equipment",
+          "record_id": "sheet1-row-16",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B16:H16"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-D16-billing_unit",
+      "raw_text": "配送1回",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "D16"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "billing_unit",
+          "record_id": "sheet1-row-16",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B16:H16"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-E16-currency",
+      "raw_text": "JPY",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "E16"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "currency",
+          "record_id": "sheet1-row-16",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B16:H16"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-F16-raw_value",
+      "raw_text": "9500",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "F16"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "raw_value",
+          "record_id": "sheet1-row-16",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "n",
+          "original_number_format": "#,##0.00\"   \"",
+          "row_range": "B16:H16"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-G16-charge_scope",
+      "raw_text": "陸送・配送のみ",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "G16"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "charge_scope",
+          "record_id": "sheet1-row-16",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B16:H16"
+        }
+      }
+    },
+    {
+      "source_id": "sheet1-H16-extra_terms",
+      "raw_text": "設置・組立なし",
+      "source_ref": {
+        "kind": "EXCEL_RANGE",
+        "locator_status": "VERIFIED",
+        "locator": {
+          "sheet_name": "見積明細",
+          "A1_range": "H16"
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "EXCEL_CELL",
+          "field_name": "extra_terms",
+          "record_id": "sheet1-row-16",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "FULL_ORIGINAL_CELL",
+          "original_cell_type": "s",
+          "original_number_format": "General",
+          "row_range": "B16:H16"
+        }
+      }
+    }
+  ]
+}

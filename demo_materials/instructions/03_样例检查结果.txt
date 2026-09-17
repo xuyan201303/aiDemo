@@ -1,0 +1,18 @@
+SAMPLE_ARTIFACTS=CREATED
+XLSX_FILES=2
+PDF_FILES=1
+XLSX_ZIP_CRC_AND_XML=PASS
+XLSX_KEY_VALUES=PASS
+XLSX_FORMULA_ERROR_SCAN=0_MATCHES
+PDF_PAGES=1
+PDF_TEXT_LAYER=CHECKED
+RENDER_REVIEW=COMPLETED
+SOURCE_LABEL_PRESERVED=配送手数料
+FIRST_PRICE=8000
+SECOND_PRICE=9500
+
+These are synthetic sample documents for a demo, not client quotations.
+No private document SDK or OpenAI call has processed these samples.
+No real Web Demo has been implemented by this artifact-generation step.
+Native Microsoft Excel and the user's Mac were not used.
+No SDK repository, user project, process or customer file was modified.

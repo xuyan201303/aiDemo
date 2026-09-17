@@ -1,0 +1,13 @@
+{
+  "revision_date": "2026-09-11",
+  "python": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]",
+  "platform": "Linux-6.18.35-x86_64-with-glibc2.41",
+  "unit_command": "cd reference_core && PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -v",
+  "unit_exit": 0,
+  "contracts_command": "PYTHONDONTWRITEBYTECODE=1 python tools/check_contracts.py",
+  "contract_exit": 0,
+  "code_contract_tool_bytes_unchanged": true,
+  "html_sections": 6,
+  "remote_calls": 0,
+  "early_local_build_issue": "Initial docs generator could not import optional markdown2; replaced with local dependency-free Markdown renderer; before a successful copy, initial test commands had no target. Corrected generation and final reference/contract commands succeeded. No reference source code changed."
+}

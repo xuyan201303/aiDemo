@@ -1,0 +1,449 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>SANZO｜原价单价表框架 v1.1.0</title><style>
+:root{--ink:#182b41;--muted:#5b6b7c;--blue:#1f5591;--line:#d9e2eb;--paper:#ffffff;--back:#f4f7fb;--soft:#edf3fa}
+*{box-sizing:border-box}body{margin:0;background:var(--back);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC","Noto Sans CJK JP","Microsoft YaHei",sans-serif;font-size:16px;line-height:1.75}
+header{background:#16324f;color:#fff;padding:36px max(24px,calc((100vw - 1060px)/2));border-bottom:5px solid #558fc4}header .eyebrow{font-size:13px;letter-spacing:2px;opacity:.8}header h1{font-size:30px;line-height:1.35;margin:10px 0 12px;color:#fff}header p{margin:0;opacity:.9}main{max-width:1100px;margin:28px auto;padding:0 20px 52px}.notice{background:#fff7e4;border-left:4px solid #c29231;padding:16px 20px;border-radius:6px;margin-bottom:24px}.sheet{background:var(--paper);padding:26px 32px;border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 24px #1a31420b}h1{font-size:27px;line-height:1.45;color:#16324f}h2{font-size:22px;line-height:1.45;margin:30px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}h3{font-size:18px;margin:26px 0 10px}p{margin:12px 0}strong{font-weight:650}a{color:var(--blue);overflow-wrap:anywhere}code{font-family:"SFMono-Regular",Consolas,monospace;background:#edf2f7;border-radius:4px;padding:2px 5px;font-size:14px}pre{background:#152b43;color:#e4edf7;padding:18px 20px;border-radius:8px;overflow-x:auto;line-height:1.65;white-space:pre}pre code{background:transparent;color:inherit;padding:0}table{border-collapse:collapse;width:100%;margin:18px 0;font-size:14px;table-layout:auto}th{background:var(--soft);color:#254866;font-weight:650;text-align:left}td,th{border:1px solid var(--line);padding:11px 13px;vertical-align:top;overflow-wrap:anywhere}tr:nth-child(even) td{background:#fbfcfe}ul,ol{padding-left:24px}li{margin:7px 0}details{background:#fff;border:1px solid var(--line);border-radius:10px;margin:18px 0;overflow:hidden}summary{padding:18px 24px;cursor:pointer;background:#edf3fa;font-weight:650;font-size:18px}.detail-body{padding:18px 32px 30px}.section-label{font-size:14px;letter-spacing:1px;color:var(--muted);margin-top:34px}footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);margin-top:30px;padding-top:18px}@media(max-width:720px){header{padding:24px}header h1{font-size:25px}.sheet,.detail-body{padding:18px}table{font-size:12px}td,th{padding:8px}main{padding:0 10px}}
+@media print{body{background:white}header{padding:20px;background:white;color:#16324f}header h1{color:#16324f}.sheet,details{box-shadow:none;border:none}details:not([open]) .detail-body{display:block}summary{break-after:avoid}h2,h3{break-after:avoid}tr,pre{break-inside:avoid}}
+</style></head><body><header><div class="eyebrow">SANZO / IMPLEMENTATION BASELINE</div><h1>原価：単価一覧表システム<br>实装框架 v1.1.0</h1><p>No.202608310011 · 株式会社コクヨロジテム · 2026-09-11</p></header><main><div class="notice"><strong>本次为文档与推进方式更新，不是实动Demo交付。</strong><br>不另设专门PoC，先用3文件Demo说明核心流程；必要时才复用少量实资料。参考核心代码保持不变，真实SDK、OpenAI和网页仍待实装。</div><section class="sheet"><h1>原価：単価一覧表システム — 实装框架 v1.1.0</h1>
+<p><strong>案件：No.202608310011／株式会社コクヨロジテム</strong>  <br><strong>基线日期：2026-09-11／SANZO内部实装用</strong>  <br><strong>状态：架构与契约基线 + 已运行测试的离线学习核心；不是完整业务系统，也不是客户最终签字规格。</strong></p>
+<h2>先看这一页</h2>
+<p>系统只做：<strong>报价导入 → 整理并利用过去纠错 → 原価：単価一覧表 → 预览、修改 → 保存并下载Excel。</strong></p>
+<p>客户不用先制作费用清单，也不维护另外一张Master。客户在正常业务中修改一次，系统自动保存“原始费用名称 → 客户确认费用”的对应关系，后续条件相同时复用。</p>
+<h3>一条贯穿全项目的例子</h3>
+<table>
+<tr><th>时间</th><th>原文</th><th>处理</th><th>结果</th></tr>
+<tr><td>第一次</td><td>送货钱：10元</td><td>AI建议“配送料”；客户改为“配送费”</td><td>本次显示“配送费：10元”；记住“送货钱 → 配送费”</td></tr>
+<tr><td>第二次、同一公司和条件</td><td>送货钱：20元</td><td>已确认的名称直接复用，价格读取这次的20元</td><td>“配送费：20元”；名称分类无需再次问AI</td></tr>
+<tr><td>新叫法</td><td>运输服务费：20元</td><td>旧记录不能直接解决，由AI结合相关案例判断</td><td>提出分类；不明确则客户确认</td></tr>
+<tr><td>条件变了</td><td>送货钱（含安装）：50元</td><td>不能把不同服务硬套旧规则</td><td>单独判断、必要时确认</td></tr>
+</table>
+<p>以上是说明用例，不是真实客户报价。“名称分类不用AI”不代表新文件读取全过程不用AI。</p>
+<h3>一套应用，六个职责</h3>
+<pre><code>客户网页：登录 + A案件上传 + B原价单价表/吹き出し/原文预览 + C案件一覧 + D用户
+                                    │
+                                    ▼
+后台业务程序：案件、权限、任务、判断、保存、Excel
+            ├── SDK适配层：原文、结构、来源位置
+            ├── 已确认费用对应记录：先查已教过的内容
+            ├── AI适配层：理解未知内容，不能自己写入学习记录
+            ├── 业务数据库：本次报价、费用分类、修正历史
+            └── 私有文件存储：原件、预览、Excel与备份</code></pre>
+<p>建议正式技术栈：React + TypeScript；Python + FastAPI；PostgreSQL；一套私有文件存储；OpenAI API。<br>这是实现选型，不是要求购买六个云服务。API与文档处理worker属于同一个项目；初期不做微服务、Kubernetes、独立向量数据库、模型训练平台。</p>
+<h2>本期做与不做</h2>
+<p><strong>做：</strong>PDF/Excel/邮件正文导入；单价与条件提取；各费用分类；纠错学习；横向列表；原文预览；当前画面修正；案件管理；6～10人登录及基本用户管理；原价单价表Excel保存与下载。</p>
+<p><strong>不做：</strong>売上単価、ドレージ料利益加算、数量乘算、日元换汇试算、利润额/率。邮件自动收取、复杂权限和完整Office版式还原也不默认纳入。</p>
+<p><strong>待确认但不阻碍搭框架：</strong>原价单价表具体样式；是否等同以前提到的新系统“加工済みExcel”；是否还需第二次转换；真实样本和部署/外部AI条件。</p>
+<h2>最新推进方式：演示，不单设验证项目</h2>
+<p>不再安排专门的PoC阶段，也不重新开发另一套验证系统。商谈用<strong>2个Excel＋1个PDF</strong>的自作样例，说明我们理解的业务流程和客户最在意的纠错复用功能。</p>
+<ul>
+<li>第一轮：A社初回Excel＋B社PDF，在同一案件上传；SDK读取、AI识别、原文预览、人工修正、保存并建立学习记录。</li>
+<li>第二轮：A社的另一个Excel作为新案件；同表记与适用条件复用人工确认名称，单价取新文件的值。</li>
+<li>末尾：保存原价单价表，显示Excel输出；未完成部分明确标识，不声称整个正式系统已建成。</li>
+<li>客户有意推进时，直接整理范围与报价。<strong>只有必要时</strong>才用同一Demo确认少量实资料，不作为每次报价的必经阶段，不要求客户制作Master或正解台账。</li>
+</ul>
+<p>Demo和约定范围的必要资料确认不另收费；正式开发按剩余本番工作另行报价，复用成果不重复计费。没有承诺对所有资料的精度或节省时间。</p>
+<p><strong>商谈顺序：</strong>客户说明 → 我方提问 → 島野さん公司介绍 → 島野さん提案 → 森田さんDemo → 客户提问。</p>
+<p><strong>島野さん最后一句：</strong>「ここからは、弊社の森田より、実際の画面を使ってご説明いたします。森田さん、デモをお願いいたします。」</p>
+<p><strong>当前交付仍只是框架与离线参考核心，三文件实动Web Demo尚未在本包中实现。</strong>具体演示边界见 <code>docs/07_三文件Demo与商谈交接.md</code>。</p>
+<h2>十条不能走样的规则</h2>
+<ol>
+<li>学习的是<strong>SDK所对应的原始费目表记 → 人工确认费目</strong>，不是“AI错误答案 → 正确答案”。</li>
+<li>本次单价、币种、有效期重新读取，不从旧报价复制。</li>
+<li>同一公司/业务适用范围且条件一致才自动复用；未知条件不是任意匹配。</li>
+<li>AI提出的分类不自动变成已确认学习记录；文件里的指令不能成为系统指令。</li>
+<li>普通业务修正即保存学习记录，不要求客户另做Master维护。</li>
+<li>同一键出现矛盾确认、规则被撤销或数据不可靠时，不用AI偷偷选择一个覆盖人工意见。</li>
+<li>预览来自原件及真实来源位置，原件只读；原文找不到要明确显示，不编页码/坐标。</li>
+<li>未分类明细、文件失败、未记载等不能删除或当作0；正常显示也不等于已验证正确。</li>
+<li>学习更新不自动改旧案件或旧Excel；当前修改与学习保存要有事务、版本和幂等保护。</li>
+<li>真实SDK只在适配层接入；不改SDK仓库，不中断其批量测试，不杜撰公共API。</li>
+</ol>
+<h2>这个包已经做了什么</h2>
+<ul>
+<li>固定架构、模块边界、数据契约、API草案、页面行为和阶段验收。</li>
+<li>提供可运行的<strong>SQLite离线参考核心</strong>：保存修正、持久学习、分类决策、冲突拦截、版本/幂等、撤销。</li>
+<li>46项离线单元测试已运行。详见 <code>evidence/unit_tests.txt</code> 和 <code>VERIFICATION.txt</code>。</li>
+<li>SDK与OpenAI适配器当前明确拒绝调用：没有连接真实SDK、模型或客户文件。</li>
+</ul>
+<p><strong>未完成：</strong>正式网页、HTTP API、PostgreSQL迁移、登录鉴权、文件解析、AI抽取/相似案例检索、OCR、PDF/Excel预览、Excel生成、生产部署、三文件实动Web演示及必要时的真实资料确认。不要把参考核心当成这些已交付。</p>
+<h2>怎样交给Codex</h2>
+<p>先让Codex读 <code>AGENTS.md</code>、<code>docs/06_Codex_W0_指令.txt</code>，<strong>只完成W0，不一口气写完整系统</strong>。W0核对真实SDK公开契约，建立后续接入依据，不动现有SDK。</p>
+<p>每一阶段结束都生成 Review Bundle ZIP、外置 <code>.zip.sha256</code>、<code>VERIFICATION.txt</code>，由ChatGPT独立レビュー后再进入下一阶段；失败/阻塞也保存真实状态和证据，不因打包成功变成实现成功。不得自动commit/push。</p>
+<h2>离线验证命令（不访问云、不收费）</h2>
+<p>需要Python 3.11或以上的兼容环境；本包实际运行环境记录在 <code>evidence/gates.json</code>，未在Mac实机运行。</p>
+<pre><code>cd reference_core
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
+PYTHONDONTWRITEBYTECODE=1 python3 -m quote_framework.demo</code></pre>
+<p>演示使用明确标注的合成数据和假AI候选；验证保存/复用机制，不证明模型准确率、SDK能力或客户文件已通过。</p>
+<h2>文件导航</h2>
+<table>
+<tr><th>文件</th><th>给谁看</th></tr>
+<tr><td>README.md、00_框架说明.html</td><td>你和社长先看，了解全貌</td></tr>
+<tr><td>docs/01_架构与范围.md</td><td>模块构造、流程与安全边界</td></tr>
+<tr><td>docs/02_纠错学习契约.md</td><td>Codex必须遵守的学习规则</td></tr>
+<tr><td>docs/03_数据_API_画面契约.md</td><td>数据库、接口与页面规格草案</td></tr>
+<tr><td>docs/04_开发阶段与验收.md</td><td>按阶段推进和验收</td></tr>
+<tr><td>docs/05_依据与未决事项.md</td><td>用户已确认、框架决策、仍待确认的区别</td></tr>
+<tr><td>docs/06_Codex_W0_指令.txt</td><td>下一步有限调查指令</td></tr>
+<tr><td>docs/07_三文件Demo与商谈交接.md</td><td>三文件演示边界、两轮步骤和森田交接</td></tr>
+<tr><td>reference_core/</td><td>已测试的学习核心参考，不是完整产品</td></tr>
+<tr><td>contracts/</td><td>参考核心JSON契约与示例</td></tr>
+</table>
+<p>范围或核心规则变化时更新版本和变更记录；不能只改代码、不改验收和文档。</p></section><details><summary>01｜架构与范围</summary><div class="detail-body"><h1>01｜架构与范围</h1>
+<p>版本：1.0.0。业务范围来自本次对话中的客户补充；技术选型和下述运行策略是本框架的实现决策，尚不是客户签字规格。</p>
+<h2>1. 产品定位</h2>
+<p>「海外物流見積の取込・修正学習による原価単価一覧表作成支援」。本期输出成本单价，不计算卖价、利润和数量金额。20/40尺、币种、计费单位等属于单价条件，必须保存；保存条件不等于本期要做换算试算。</p>
+<p>“客户不维护费用清单”是强制业务边界；不代表内部不能有费用类别ID和已确认对应关系。第一份资料由系统提出分类；人工只在日常单价表中纠错或确认。不得让客户提供全量费用清单作为开始使用的条件。</p>
+<h2>2. 构造：模块化单体，不是分布式微服务</h2>
+<p>正式项目暂定目录名 <code>sanzo-cost-table</code>，与私有 <code>document-processing-sdk</code> 并列且独立。SDK通过固定版本依赖和Adapter调用，默认不使用指向可变工作树的editable安装。</p>
+<pre><code>sanzo-cost-table/                 # 后续W1创建的正式项目，当前包不是已部署项目
+  apps/
+    web/src/
+      pages/                     # login, case-create, cost-table, cases, users
+      features/review-popover/   # 原地编辑、冲突提示、未保存状态
+      features/source-preview/   # 只读原件预览，不显示AI重排结果冒充原文
+      api/                       # 由类型契约生成/校验请求响应
+    api/app/
+      identity/                  # 认证后的Actor、租户/案件权限
+      cases/                     # 案件与文件归属
+      documents/                 # 原件、校验、SDK适配与source blocks
+      extraction/                # 费用行/金额/条件抽取和完整性检查
+      classification/            # 已确认记录查询、未知AI候选
+      learning/                  # 事务保存、适用范围、冲突、撤销
+      review/                    # 人工修正与最终确认
+      exports/                   # 原价单价表快照与Excel输出
+      jobs/                      # 文档任务、租约、幂等、重试、失败状态
+      integrations/              # SDK/OpenAI/storage/identity的边界
+      common/                    # 明确通用类型；不做万能utils大仓库
+  migrations/                    # PostgreSQL，版本控制
+  contracts/                     # 公共DTO、来源与错误契约
+  tests/                         # unit, contract, integration, e2e, security
+  docs/                          # 本基线、ADR、样本范围与验收记录
+  evidence/                      # 仅脱敏证据；真实文件在受控外部目录</code></pre>
+<p>API与worker由同一代码库、同一锁定依赖构建，分别作为进程运行；API受理请求并快速返回任务ID，worker处理耗时文档。前端轮询任务状态即可，初期不必WebSocket。正式运行需要TLS、私有存储、数据库、备份，平台按客户条件决定。</p>
+<p>FastAPI可以按模块组织路由，不要求一个功能一套服务；模块划分是本方案设计。[T1]</p>
+<h2>3. 六层职责</h2>
+<table>
+<tr><th>层</th><th>可以做</th><th>不可以做</th></tr>
+<tr><td>SDK Adapter</td><td>受控读取、保留字词/表格/页/单元格/来源；统一项目内部DTO</td><td>杜撰SDK接口；自动允许外部OCR；侵入SDK仓库</td></tr>
+<tr><td>Extraction</td><td>将原文块转为本次报价明细；金额和上下文关联</td><td>从旧报价补本次金额；无法读到时随意推测</td></tr>
+<tr><td>Learning Resolver</td><td>确认记录先行、精确上下文匹配、冲突/撤销拦截</td><td>按AI输出别名查；模糊相似直接视为人工确认</td></tr>
+<tr><td>AI Gateway</td><td>必要字段抽取、未知费目建议；最小必要上下文</td><td>永久自学承诺；任意代码/SQL/工具调用；自行写入已确认记录</td></tr>
+<tr><td>Review Service</td><td>保存当前修改与学习事件；版本、权限、幂等</td><td>直接更改原件；自动覆盖他人的更新；静默吞掉学习失败</td></tr>
+<tr><td>Export Service</td><td>从确认后的结构化数据生成一致的Excel</td><td>让AI任意排表；无规则算利润/汇率；未经验证称新系统取込成功</td></tr>
+</table>
+<h2>4. 数据流</h2>
+<h3>4.1 接收与读取</h3>
+<p>先鉴权、校验上传范围，再私有保存原件并计算内容哈希。文件归属于案件，但一个文件可以有多个报价方案，一个方案也可以来自多个附件；不强制一文件一公司一报价。</p>
+<p>SDK读取被置于有限资源worker。记录document_id、原件SHA、SDK版本、解析配置、真实source block ID和原始定位。上传与解析失败必须可见。旧版.xls、.xlsm、带密码或扫描PDF是否支持由真实契约/样本决定，不通过扩展名列表制造已支持的假象；初期输入保留PDF、Excel、邮件正文能力目标，具体条件登记。</p>
+<h3>4.2 结构化与完整性</h3>
+<p>已有经过验证的表结构和字段映射可以本地提取。不能可靠确定行、金额、单位关系时调用AI抽取；AI只引用已提供的block IDs，服务器核验block存在且归属一致。AI不得凭空产生页码、坐标和单元格。</p>
+<p>每个候选明细区块必须有“纳入明细／非费用且说明理由／未解析”的处置。此清单仅证明已发现候选块均有处置，不能证明解析器发现了原文件每一行；内部功能测试及必要的样本确认还需独立与原件核对漏行。空结果不自动视为成功；除非证据能说明原资料确实无费用。</p>
+<h3>4.3 分类</h3>
+<p>从本次已结构化数据取得<strong>原始费目名</strong>，查询已确认映射。精确命中且无冲突时，分类由程序直接决定。没有可靠记录则由AI参考同租户允许的相关确认案例和已有费目概念提建议。条件未解析的，先回到读取/条件确认，不能用分类AI掩盖条件缺失。</p>
+<p>AI抽取调用和AI分类调用分别计数。一个已知费目的分类命中，不意味着这份文件的结构提取没有调用AI；UI和报告不得将分类命中率换算成“整个系统无需AI”。</p>
+<h3>4.4 单价表与纠错</h3>
+<p>展示层由报价明细生成，不保存另一套互相脱节的AI表格。客户改名称时关联稳定的fee_id；改条件时只改本次条件，是否生成对应关系需重新校验，不能扩大适用范围。改金额只修改当前报价，不能训练固定价格。</p>
+<p>所有字段都可以经合适权限进入纠错，不只是黄色项目。缺失明细可以人工新增，必须标“人工追加”并指向原件依据；不能因原文标签尚未确定就自动创建已确认别名。删除采用排除+理由和历史，不物理丢掉源证据。</p>
+<h3>4.5 保存与输出</h3>
+<p>行保存后立即刷新该行和表格版本，同时返回学习效果。生成Excel从特定case_revision建立快照，异步导出只读这个快照；当前页面随后修改不改变旧文件。不存在默认的“再加工”第二步骤。新系统取込转换仅为待确认边界，不算已删除的客户需求也不算已承诺开发。</p>
+<h2>5. AI与云使用策略</h2>
+<p>本框架不锁定模型名或OpenAI客户端版本。W0/W2查验真实兼容性后固定具体版本、模型配置、prompt_version、schema_version。普通API不会替应用自动管理客户的持久纠错关系；它们放在自己的数据库中。相关确认案例可作为prompt上下文，属于应用层的记录利用，不等同于模型权重更新。[T2]</p>
+<p>计划使用结构化返回，服务器再次校验schema、枚举、来源ID、金额、状态。结构化输出仍可能有内容错误；拒绝、超时、输出截断、无关输入、校验失败分别记录，不转为成功空表。[T3]</p>
+<p>实时业务不授予模型网络搜索、代码执行、外部连接器或数据库写权限。客户文件、邮件正文、历史案例都是不可信数据，不得提升为系统指令。发送上下文时保留对费用理解必需的条件，但不发送无关账户、其他租户信息或全部历史报价。</p>
+<p>默认 <code>ALLOW_EXTERNAL_AI=false</code>，取得资料使用许可和环境设置后显式启用。SDK内可能存在的云OCR也必须单独允许；不可在本地失败时静默外传。OpenAI数据使用与保留条件按实际接口/模型/账号确认；<code>store=false</code>不等于无任何日志或绝对零保留。[T4]</p>
+<h2>6. 安全与运行底线</h2>
+<p>上传按白名单、MIME/文件签名/结构组合检查；随机对象键；不信用户文件名作为路径；上传、解析解压大小/条目/页数/时间均有限额。宏、外链、嵌入程序不执行；Excel公式缓存缺失不伪造计算结果，保留原公式和缺失状态。文件安全检验与业务SDK解析不是互相替代。[T5]</p>
+<p>原件、预览、下载、学习查询、批量API都按服务端Actor的租户/案件权限检查；用户不能靠传tenant_id切换范围。对已导入HTML邮件去活性内容，不加载远程图片；PDF预览限制主动内容和外链；日志不存API密钥、整份报价或完整模型prompt。</p>
+<p>基线建议管理员/一般用户两角色、同一客户工作区共享案件，具体可见范围由客户安全要求确认。先采用成熟认证组件/服务，不自制密码算法。若password方案成立，需安全哈希、会话失效、CSRF防护、安全cookie、频率限制和恢复流程；若指定SSO则仅替换认证Adapter。认证之前不暴露业务API。</p>
+<p>后台任务持久化在PostgreSQL，使用短事务领取任务、租约/fencing token/心跳/重试上限。<code>FOR UPDATE SKIP LOCKED</code>可以用于队列争用，但不能代替事务一致性或在整个AI调用期间持有数据库锁。[T6]</p>
+<p>重试采取“至少一次执行、幂等提交”模型，不承诺外部AI绝不重复收费。任务失联重取、AI失败、DB提交失败、用户已改数据等均单独处理。文件/案件内容hash不能跨租户公开查重。备份含原件、数据库、学习关系及加密/访问配置；正式上线需实际恢复演练，RPO/RTO与保留期还待客户确认。</p>
+<h2>7. 与现有SDK的隔离</h2>
+<p>真实SDK没有在本框架包内安装或核验。<code>DocumentReadPort</code>是本项目自有接口，不是私有SDK公共方法名。W0生成能力映射：PDF文本/页码/渲染、Excel原单元格/原始值/缓存/范围、来源坐标、显式OCR开关、错误与资源上限。</p>
+<p>如果SDK缺字段，记录明确的Adapter能力缺口；不以猜测补来源，不偷偷改SDK或第三方模块。最新附件是有限代表的证据预览，不是100K验收，也不证明本项目接入已经通过。该证据边界见 <code>05_依据与未决事项.md</code>。[U4]</p></div></details><details><summary>02｜纠错学习契约（必须实现）</summary><div class="detail-body"><h1>02｜纠错学习契约（必须实现）</h1>
+<p>版本：learning-contract-v1。此文件与验收测试同时变更；不能通过替换prompt绕开这些规则。</p>
+<h2>1. 精确记住什么</h2>
+<pre><code>原件费目表记：送货钱
+AI曾建议：配送料
+人工确认：配送费
+
+建立：原件费目表记“送货钱” + 适用上下文 → fee_id(配送费)
+禁止仅建立：“配送料” → “配送费”</code></pre>
+<p>原表记由source block关联的本次抽取得到；必须把原件表记、AI建议、人工结果分开保存。若原文标签本身是OCR误读或费目/金额边界不明，先修正读取证据；不能把未核对的文本当可信键。</p>
+<h2>2. 名称、金额、条件分别处理</h2>
+<p><strong>可复用的内容：</strong>费用对应关系、稳定fee_id、适用范围、证据与版本。</p>
+<p><strong>不得复用为本次事实：</strong>旧单价、旧币种、报价日期/有效期、旧文件位置、旧数量、旧报价是否包含某项。</p>
+<p>单价从10改成20不改变名称匹配键。币种变化时分类可以复用，但本次币种必须独立读取并验证，也不得跨币种计算合计。条件中“含安装”与“不含安装”、20尺与40尺、起运地与目的地收费、每票与每柜不能被忽略。</p>
+<h3>v1精确键</h3>
+<pre><code>(tenant_id,
+ verified_forwarder_id,
+ normalize_v1(original_fee_label),
+ context_policy_version,
+ confirmed_applicability_signature,
+ normalization_version)</code></pre>
+<p>适用签名v1包含：transport_mode、equipment、billing_unit、charge_scope、extra_terms。UNKNOWN和NOT_APPLICABLE明确分开；UNKNOWN不作通配。原文出现但不能建模的附加条件放入extra_terms，不能删掉。需用独立来源/校验状态确认签名不是模型任意猜测。</p>
+<p>初期严格按公司范围确认，不自动把一家公司规则推广到所有公司。同租户其他用户/新案件可复用；其他公司未确认的相似写法由AI提供建议。在真实样本证明可安全泛化后，才版本化增加tenant-wide规则；不要求客户维护该结构。</p>
+<p>normalize_v1只做Unicode NFC和空白规范化，保留数字、斜杠、引号、大小写等。任何进一步归一化均需测试和新版本，不在上线后静默重写旧键。键不包含单价/币种/案件ID/文件ID。上下文安全门是内部结果，不能接受客户端提交<code>ready=true</code>作为可信依据。</p>
+<h2>3. 查询决策表</h2>
+<table>
+<tr><th>输入状态</th><th>分类动作</th><th>是否给AI分类</th><th>当前表状态</th></tr>
+<tr><td>SDK/抽取未可靠分清名称和金额、来源缺失</td><td>先补读取或人工核对</td><td>分类暂不执行；读取可单独调用AI</td><td>読取要確認</td></tr>
+<tr><td>条件不完整/未验证</td><td>完成条件抽取或核对</td><td>不允许以分类命中跳过缺失条件</td><td>条件要確認</td></tr>
+<tr><td>相同键、ACTIVE且只有一个有效目标</td><td>直接用该fee_id</td><td>不调用分类AI</td><td>過去の修正結果を適用</td></tr>
+<tr><td>没有相同键、只有相似历史</td><td>将有限相关记录作为AI参考</td><td>可以，但须许可/额度</td><td>AI判定或要確認</td></tr>
+<tr><td>无记录且无费目清单</td><td>AI提出初始分类/新费目概念</td><td>可以</td><td>未经人工确认仍是建议</td></tr>
+<tr><td>同键人工结果矛盾</td><td>暂停自动复用</td><td>不让AI私自解决人工冲突</td><td>確認内容の相違</td></tr>
+<tr><td>同键已撤销</td><td>不回退到旧ACTIVE事件</td><td>不自动复活</td><td>要確認</td></tr>
+<tr><td>AI不可用/失败/被拒绝/输出不合法</td><td>保留原明细、提示原因</td><td>无效调用不作成功</td><td>要確認或処理失敗</td></tr>
+</table>
+<p>“相同键命中”仅确定分类，不替代金额、明细完整性、文件处理和最终确认。禁止把MEMORY_APPLIED等同于整份文件PASS。</p>
+<h2>4. 保存修正的原子操作</h2>
+<ol>
+<li>根据已认证Actor取得租户和案件编辑权限，不信请求中的原件名称或tenant_id。</li>
+<li>检查Idempotency-Key及请求hash；相同key同payload返回原结果，不重复学；同key不同payload返回409。</li>
+<li>检查expected_item_version和必要的expected_case_revision，防止覆盖别人或worker已经产生的变化。</li>
+<li>从服务端原始Observation取原表记、source、公司与条件，不能用AI建议字段作为原文键。</li>
+<li>选择已有fee_id或新建概念。客户输入新名称时由服务端处理；同显示名存在时让其选择已有费目，不凭名称自动合并语义。</li>
+<li>检查当前学习键版本expected_memory_version。同一键被他人修改过则409并保留前端输入。</li>
+<li>同一事务更新当前行、行/表版本、correction_event以及learning_version/slot和幂等结果。PostgreSQL并发行为要集成测试，不以SQLite测试替代。[T7]</li>
+<li>返回最新行、费用分组、表版本和学习状态。前端刷新表格，但保留未保存的其他输入；关闭预览不丢输入。</li>
+</ol>
+<p>金额-only修正不建立费用名称规则。点击整张表“最终确认”不代表逐条人工审核了每个AI候选，不自动把所有AI输出晋升为已确认映射。费用字段经人工修正/逐项明确确认后才学习；这不增加Master维护流程。</p>
+<p>如果资料来源或条件不足，当前修正仍可保存为人工修正，但自动复用状态为<code>NOT_ELIGIBLE</code>，界面明确提示“本次已保存，自动复用尚需确认”，不得显示已学习成功。</p>
+<h2>5. 冲突与纠正错误记忆</h2>
+<p>同键出现不同费用目标时，不采用“最后一次写入必然正确”，先记为CONFLICTED。新案件遇到它需要确认，已有已保存案件不自动变化。</p>
+<p>在原吹き出し提供“已有不同确认，是否以本次核对结果更新后续识别”的明确提示；只有用户针对该冲突确认，并携带最新memory_version，才能生成替代版本。该动作仍发生在正常业务纠错画面，不引入客户日常Master维护。</p>
+<p>撤销是新增版本/事件，不删除历史。撤销后的匹配不能回退找到更早一条ACTIVE。修复规则后，旧案件如需重新整理要显式重算，且先展示与已确认数据的差异，禁止自动覆盖。</p>
+<h2>6. 费用概念与比较分组</h2>
+<p><code>fee_id</code>稳定，<code>display_name</code>是显示名；显示名不能成为唯一业务事实。基本比较键是fee_id + 已验证的适用条件，而非只看中文/日文名称。20尺和40尺可以同一fee_id但不同条件行；“配送及安装套餐”不得直接合并进配送费。</p>
+<p>客户可以在吹き出し中选择已有费目实现本次行归类。系统识别出重复概念时给出同画面合并建议，不能自动把历史概念全局合并。全局概念合并属于有版本和审计的操作，当前参考核心不实现；上线前至少保证选择已有费目和本次行重归类可用。</p>
+<p>单价表同一公司/条件出现多条费用不能静默覆盖，也不能不经规则相加。保留quote_offer、明细ID和必要的子行/明细展开，后续按客户表样确认显示。</p>
+<h2>7. AI部分的边界</h2>
+<p>至少区分两个调用原因：<code>EXTRACTION</code>和<code>CLASSIFICATION</code>。学习命中优化后一类；不可承诺所有已学习文件都零调用。</p>
+<p>提取prompt只返回字段值和允许引用的source IDs；分类prompt只返回候选fee_id/新名称、理由、未决条件，不能改本次金额。参考代码的ClassificationPort刻意不提供金额写入接口。</p>
+<p>只检索同租户、权限允许、未撤销未冲突的相关案例；不把整个历史库塞入prompt。v1用普通索引/词法相似检索即可，检索结果只作候选。首期不承诺embedding或fine-tuning；增加时走ADR，不可改变精确人工规则优先级。</p>
+<p>Structured Outputs约束结构而非正确性；类别ID不在当前允许集合、source IDs越权、返回截断均拒绝或降级为人工确认。[T3]</p>
+<h2>8. 离线参考核心与正式实现的差别</h2>
+<p><code>reference_core</code>实际实现：持久保存精确键、事务纠错、乐观版本、幂等、原文→人工结果、金额保留、scope隔离、冲突和撤销拦截。</p>
+<p>它用SQLite，不包含真实认证、source可靠性计算、原件解析、货币/单位业务词典、AI检索/调用、PostgreSQL并发、UI或Excel。Context.ready与Actor由测试可信注入，仅用于核心机制验证；生产不能由客户端填写。reference <code>classify</code>用于新一轮分类决策，旧表显示应读取当前保存数据，不能每次render重算覆盖人工结果。</p>
+<p>参考核心的撤销方法是内部调用，无生产HTTP路由；将来路由必须补齐幂等和案件授权。新概念显示名在参考库内采用唯一约束，不能把这条技术简化解释成真实业务永远没有同名不同费目；正式模型以fee_id和条件为准。</p></div></details><details><summary>03｜数据、API和画面契约草案</summary><div class="detail-body"><h1>03｜数据、API和画面契约草案</h1>
+<p>这些是本项目自有契约，不是已实现的HTTP接口，不是document_sdk公共API。精确的SDK映射须先完成W0。</p>
+<h2>1. 分开存三类核心数据</h2>
+<table>
+<tr><th>数据</th><th>示例</th><th>不变规则</th></tr>
+<tr><td>原始证据</td><td>原PDF/Excel/邮件、SHA、页/单元格/source block</td><td>原件不改，来源只能真实关联</td></tr>
+<tr><td>本次报价</td><td>本次单价20、币种、费用条件、人工修正</td><td>新文件重新读，旧金额不套用</td></tr>
+<tr><td>识别知识</td><td>送货钱→配送费，适用范围和确认事件</td><td>不放旧价格；可撤销、可追溯</td></tr>
+</table>
+<h2>2. 正式数据库的逻辑实体</h2>
+<table>
+<tr><th>实体</th><th>主要字段／关系</th><th>关键约束</th></tr>
+<tr><td>workspaces / users / memberships</td><td>tenant、用户ID、identity subject、角色、状态</td><td>Actor由认证导出；用户停用使后续请求失效</td></tr>
+<tr><td>cases</td><td>tenant、case_id、名称、case_revision、状态、创建/更新时间</td><td>每次影响结果的变更推进版本</td></tr>
+<tr><td>documents</td><td>tenant、document_id、object_key、sha256、原文件名、MIME、size、case_id</td><td>版本只追加；附件不可绕过案件授权</td></tr>
+<tr><td>quote_offers / offer_documents</td><td>forwarder_id、方案ID、币种/有效条件；多对多附件关系</td><td>不等同文件；未知公司显式标记</td></tr>
+<tr><td>ingestion_runs / jobs</td><td>case、输入版本、配置、各阶段状态、租约、attempt、fencing_token</td><td>再处理不覆盖人工版本；失败不能从统计消失</td></tr>
+<tr><td>source_blocks</td><td>document_id+revision、block_id、raw_text、source_locator</td><td>locator可缺失但不能编造；一字段可对应多个block</td></tr>
+<tr><td>observed_lines</td><td>run、offer、raw_label、raw_value、parsed_decimal、原币种/单位/条件、sources</td><td>原始解析观察不改写；保留异常/缺失状态</td></tr>
+<tr><td>reviewed_lines / line_revisions</td><td>observed_line或人工追加、fee_id、金额/条件覆盖、item_version、review_status</td><td>overlay和历史；人工追加标记依据</td></tr>
+<tr><td>fee_concepts</td><td>tenant、fee_id、display_name、provisional/confirmed、origin</td><td>系统创建/日常纠错确认，不要求客户维护费用清单</td></tr>
+<tr><td>learning_slots / learning_versions</td><td>scope_key、上下文签名、norm/policy version、target_fee_id、ACTIVE/CONFLICTED/REVOKED</td><td>历史追加；精确键当前slot单一，不自动回退</td></tr>
+<tr><td>learning_evidence</td><td>learning_version、correction_event、observed_line、source_ids</td><td>绑定原文与人工选择，不只保存AI答案</td></tr>
+<tr><td>correction_commands / audit_events</td><td>Actor、幂等key/hash、expected revisions、before/after、结果</td><td>事务写入；重复请求不重复修改</td></tr>
+<tr><td>export_snapshots / export_files</td><td>case_revision、数据快照hash、template_version、对象键、生成状态</td><td>从固定快照生成；旧文件不随新学习更改</td></tr>
+<tr><td>ai_call_attempts</td><td>run/item、目的、model/prompt/schema版本、token、attempt、结果/拒绝/超时</td><td>分开EXTRACTION/CLASSIFICATION；默认不记录完整内容</td></tr>
+<tr><td>data_policies</td><td>外部AI许可、允许provider、保留/删除、大小/时限/预算配置</td><td>未授权默认拒绝外传；阈值可版本化配置</td></tr>
+</table>
+<p>上表是逻辑结构而非承诺必须拆出相同数量SQL表。迁移、索引、复合外键/租户隔离、备份策略在W1确定并测试。</p>
+<p>金额使用Decimal和PostgreSQL numeric，JSON传字符串；不得float计算或默默四舍五入。保留raw_value以处理逗号/点歧义。<code>0</code>、<code>null</code>、<code>INCLUDED</code>、<code>NOT_QUOTED</code>、<code>NOT_APPLICABLE</code>、<code>UNKNOWN</code>有区别；分类正确也不能把金额状态改成KNOWN。</p>
+<h2>3. 来源定位契约</h2>
+<pre><code>source_ref = {
+  document_id, document_revision, document_sha256,
+  source_block_ids[],
+  kind: PDF_PAGE | EXCEL_RANGE | EMAIL_TEXT,
+  locator_status: VERIFIED | PAGE_ONLY | UNAVAILABLE,
+  locator:
+    PDF  -&gt; page_number(1起), optional bbox+coordinate_system+page_rotation+page_size
+    Excel-&gt; exact_sheet_name, A1_range, cell_value_kind, original/cached-value区分
+    Email-&gt; canonical_text_revision, character_start/end或block IDs
+}</code></pre>
+<p>PDF坐标不可靠则只开真实页，不画“猜测高亮”；连页码都未确定则让客户查原件。Excel简易预览来自原工作表，不是分类后的单价表；公式缺缓存明确提示，不假计算。Email正文保存后固定规范化版本，偏移量相对这个版本，不相对后来重排的HTML。</p>
+<p>source_ids由服务端分配。客户端只请求允许的source_id，不接受任意URL/路径。多文档依据显示可点开的列表，不随机挑一个。</p>
+<h2>4. API路由草案</h2>
+<p>同源HTTPS；会话/CSRF或受支持的身份组件；所有业务端点先授权。表内路径为计划，不代表当前包有这些端点。</p>
+<table>
+<tr><th>方法／路径</th><th>用途</th><th>必需的行为</th></tr>
+<tr><td>POST /api/v1/cases</td><td>创建案件</td><td>actor scope；幂等；返回case_revision</td></tr>
+<tr><td>GET /api/v1/cases</td><td>案件一覧</td><td>分页/搜索；仅允许范围</td></tr>
+<tr><td>POST /api/v1/cases/{id}/documents</td><td>上传附件或登记正文</td><td>尺寸/类型校验、原件hash、私有保存；不立即当解析成功</td></tr>
+<tr><td>POST /api/v1/cases/{id}/runs</td><td>开始处理</td><td>输入版本固定、job_id、幂等；新任务不覆盖旧人工确认</td></tr>
+<tr><td>GET /api/v1/runs/{id}</td><td>查询进度</td><td>每文件状态＋成功/失败/排除/待处理，不只百分比</td></tr>
+<tr><td>GET /api/v1/cases/{id}/cost-table</td><td>获取当前原价表</td><td>current saved overlay + 未分类/错误；case_revision</td></tr>
+<tr><td>GET /api/v1/items/{id}/review-context</td><td>打开吹き出し</td><td>原文source、当前字段、候选fees、item/memory版本</td></tr>
+<tr><td>POST /api/v1/items/{id}/corrections</td><td>修改并学习</td><td>明确选择费用；来源键服务端取；事务/409/幂等</td></tr>
+<tr><td>POST /api/v1/cases/{id}/manual-lines</td><td>补充漏行</td><td>手工标记、原件依据、不得静默建立无源别名</td></tr>
+<tr><td>POST /api/v1/items/{id}/exclusions</td><td>排除错误/非费用明细</td><td>理由+历史；原观察不删</td></tr>
+<tr><td>GET /api/v1/sources/{id}/preview</td><td>对应位置预览</td><td>只读、权限、真实定位、原件fallback</td></tr>
+<tr><td>GET /api/v1/documents/{id}/download</td><td>原件下载</td><td>先授权再短时签名或同源代理；对象键不裸露</td></tr>
+<tr><td>POST /api/v1/cases/{id}/confirmation</td><td>最终确认</td><td>expected_case_revision；无未处置文件/阻断问题</td></tr>
+<tr><td>POST /api/v1/cases/{id}/exports</td><td>原价Excel生成</td><td>draft/final、case_revision、template_version、幂等</td></tr>
+<tr><td>GET /api/v1/exports/{id}</td><td>生成状态/下载入口</td><td>固定快照版本，权限检查</td></tr>
+<tr><td>GET/POST/PATCH /api/v1/users</td><td>基本用户管理</td><td>管理员；禁用生效；不能自由更改tenant</td></tr>
+</table>
+<h2>5. 纠错请求和响应要点</h2>
+<p>请求包含：expected_case_revision、expected_item_version、expected_memory_version、Idempotency-Key、修改字段（选择已有fee_id或新名称，二选一）、必要时针对旧学习冲突的明确更新确认。</p>
+<p><strong>不得包含可被信任的：</strong>tenant_id、原文标签、原件路径、source_ready、condition_verified、任意全局学习scope。可提交用户纠正的业务条件，但其来源和适用性由服务端验证后形成新版本。</p>
+<p>服务端返回最新行/表版本、fee_id、warning reasons和learning_effect：</p>
+<ul>
+<li><code>ACTIVE</code>：当前已存，后续可在同条件复用。</li>
+<li><code>NOT_ELIGIBLE</code>：当前已存，但条件/来源待确认，后续自动复用暂保留。</li>
+<li><code>CONFLICTED</code>：当前已存，已有矛盾记录，后续复用暂停。</li>
+<li><code>UNCHANGED_AMOUNT_ONLY</code>：只改本次金额，没有建立名称规则。</li>
+</ul>
+<p>409版本冲突时不清空用户输入，显示最新值让其核对重提；网络失败时用同Idempotency-Key重试。分类和金额同时改，任一需回滚则整体不成功。学习冲突是明确的保存结果，不伪装成DB异常；DB异常必须回滚。</p>
+<p><code>contracts/reference_correction.schema.json</code>仅对应离线核心的较小请求类型，不含上述完整生产API字段。不能拿它直接生成一个不带case鉴权的公网API。</p>
+<h2>6. UI契约</h2>
+<p><strong>登录：</strong>依客户认证条件，基线先预留成熟认证Adapter，不自行编密码系统。</p>
+<p><strong>A 案件作成：</strong>案件名；同案件多文件；邮件正文；选择后开始；处理状态；部分失败可以重试/有理由排除。无Master上传步骤。</p>
+<p><strong>B 原価単価一覧：</strong>公司/报价方案为列，费用+条件为行；原币种单价；未分类、Included和缺失状态；点击单元格开启吹き出し；来源位置点开侧边只读预览；现场改费用/条件/单价等；保存即刷新；显示学习是否生效；支持补充和排除，不只修改已有黄色格。</p>
+<p>按钮初期为「一覧表を保存」「Excelを作成」「Excelダウンロード」。不默认有“新システム用に加工”。保存编辑和下载原件不修改源文件。</p>
+<p><strong>C 案件一覧：</strong>案件名/担当者/处理状态/待确认数/更新/Excel版本；点开继续。不要用“要確認0”替代全件处理完成。</p>
+<p><strong>D 用户：</strong>管理员追加/停用；一般用户日常工作。学习结果在本客户允许的业务范围内复用，不局限某个登录人。</p>
+<h2>7. 状态和输出</h2>
+<p>文件：RECEIVED → VALIDATING → READING → EXTRACTING → CLASSIFYING → AVAILABLE；异常是FAILED、REVIEW_REQUIRED，主动排除是EXCLUDED且有理由。详细阶段可以合并显示，但后端不可丢失。</p>
+<p>案件分别保留ingestion_status（处理完整性）与review_status（业务确认），最终表不靠一个状态字段猜完整性。发布FINAL Excel要求：选定输入均已明确处置、无阻断缺失/冲突、当前revision已经最终确认；DRAFT可输出但文件名/内部页明确“未確認・草稿”，带问题清单，不能作为取込完成证明。</p>
+<p>Excel由程序按明确模板生成，文本列写为字符串，不执行以<code>= + - @</code>等开头的原始文本；不嵌外部连接、宏或模型生成公式。保存文本含义同时避免公式注入，需应用端实测。输出保留当前单价和原币种；不做任何未约定的加价/数量/换汇。结构样例不是新系统已接受的规格。</p></div></details><details><summary>04｜开发阶段与验收</summary><div class="detail-body"><h1>04｜开发阶段与验收</h1>
+<h2>1. 执行方式</h2>
+<p>ChatGPT负责基线/独立レビュー；Codex负责限定范围调查、实现和验证；用户在Mac确认执行环境、提供实际证据。一个阶段通过不自动授权下一个阶段；没有commit、push、merge、发布权限。</p>
+<p>每阶段都必须生成Review Bundle。成功、测试失败、依赖/范围阻塞分别标真实状态，保留未执行说明，不靠打包把失败改成完成。只打包限定代码、diff、基线、命令及退出码、脱敏测试和内部SHA清单；排除原始客户PDF/Excel/邮件、真实凭证、环境密钥、缓存、venv、无关仓库及SDK数据集。</p>
+<h2>2. 阶段划分</h2>
+<table>
+<tr><th>阶段</th><th>有限目标</th><th>通过条件</th><th>不能顺手做的事</th></tr>
+<tr><td>W0 接入边界核对</td><td>核对真实SDK公开方法/输出/错误/来源/资源和环境版本；记录本文与现实差距</td><td>能力映射＋证据位置＋差距表；SDK未修改，批量进程未干扰；明确版本与依赖候选</td><td>不写完整UI、不改SDK、不跑100K、不发客户文件至云</td></tr>
+<tr><td>W1 领域与持久化</td><td>在独立项目落地模型、PostgreSQL迁移、事务纠错、版本/幂等、费用概念与学习slot</td><td>参考核心测试语义迁移；真实PostgreSQL并发/回滚/跨scope测试；别名从原文建立</td><td>不用SQLite测试冒充PostgreSQL验收，不用假AI证明模型效果</td></tr>
+<tr><td>W2 文档读取与抽取</td><td>真实SDK Adapter、小样本本地解析、来源链、归属、明细对账；AI port先假实现</td><td>来源正确、文件失败可见、原字段保持、错误/截断/不支持显式；无重复或静默丢明细</td><td>不偷偷开启云OCR，不猜source坐标，不执行附件宏/外链</td></tr>
+<tr><td>W3 三文件商谈Demo</td><td>经许可接入真实SDK/OpenAI；制作2个Excel＋1个PDF自作样例；薄层上传、列表、吹き出し、预览、保存和Excel输出</td><td>第一轮Excel＋PDF→修正保存；第二轮另一Excel新案件→同条件分类复用且新价格正确；来源可预览，真实调用/疑似结果可区分</td><td>不建专用PoC，不扩做本番用户管理；不预先写入第3文件答案，不伪造AI误识别</td></tr>
+<tr><td>W4 正式业务画面与输出</td><td>复用W3薄层；完善登录+4画面、修改/增补/排除、案件管理、权限及Excel版本输出</td><td>端到端真实持久化；关闭预览不丢编辑；文件/行/版本一致；不存在“再加工”必经步</td><td>不加卖价/利润/数量/汇率试算，不加Master维护页</td></tr>
+<tr><td>W5 生产化与交付</td><td>权限、安全、失败恢复、部署、依赖锁定、备份/恢复、客户样本验收</td><td>同scope授权、文件安全、DB并发、任务失联恢复、泄漏测试、备份恢复实证和操作手册</td><td>不用6-10用户数代替业务量/安全实测，不宣称全部文件100%正确</td></tr>
+</table>
+<p>W0～W5是内部工程分段，不是要求客户逐个购买或等待的商业阶段。W3只做商谈Demo；W4/W5是另行授权并约定范围后的正式开发。第一轮纠错到第二轮复用必须在W3真实跑通，不能把关键预览/保存功能全部拖到W4后还声称Demo已完成。</p>
+<p>客户侧推进：Demo展示 → 需求/范围与前提整理 → 概算/正式见积 → 合同 → 本开发。必要的少量实资料确认可在范围和报价整理期间复用同一Demo完成，并非一律必须追加的阶段。Demo和约定范围的必要资料确认对客户不另收费；正式开发只计算剩余生产化工作，不重复计费。不提供未经验证的价格或工期承诺。</p>
+<h2>3. 学习核心必须通过的验收</h2>
+<ol>
+<li>SDK原文“送货钱”、AI曾给“配送料”、人工改“配送费”：后续匹配的是“送货钱→配送费”，不是“配送料→配送费”。</li>
+<li>新案件、新文件、金额10→20，费用分类可复用，单价必须保持新值。</li>
+<li>新数据库连接/应用重启后仍复用；不是依赖进程变量或浏览器缓存。</li>
+<li>同工作区另一名授权担当者可以复用；另一租户、错误公司scope不能直接复用。</li>
+<li>20FT→40FT、单位变化、含安装等条件变化不得套用；UNKNOWN不当作N/A或通配。</li>
+<li>AI建议未人工确认时不创建ACTIVE规则；学习只在明确费用修正/确认事件生成。</li>
+<li>金额-only修正不改变名称规则；已有规则命中不会改当前币种、日期、有效期或source。</li>
+<li>同键不同人工意见进入冲突；撤销后不找到旧版再活用；明确人工解决且版本正确后才恢复。</li>
+<li>事务中断/版本冲突不出现“行已保存但规则丢失”的静默半成功；重复请求不重复创建概念/学习事件。</li>
+<li>上下文或source不足时可保存当前修正，但UI必须说明未满足自动再利用；不得假报已学习。</li>
+<li>老案件显示/旧Excel不随规则更新而被改写；重新分析不得无提示覆盖人工修正。</li>
+<li>确认名称相同不等于单位可比、金额正确或全文件已读全。</li>
+</ol>
+<p>本包已完成上述部分机制的46项<strong>离线参考测试</strong>；完整UI/真实SDK/真实模型/正式PostgreSQL任务流程仍按阶段验证。</p>
+<h2>4. 三文件Demo与必要样本确认</h2>
+<h3>固定演示输入（自作、架空数据）</h3>
+<table>
+<tr><th>文件</th><th>使用轮次</th><th>内容</th></tr>
+<tr><td>A社_初回見積.xlsx</td><td>第1轮，与PDF同一案件</td><td>若干费用、单价、币种和明确条件；含可在业务中调整的费目名称</td></tr>
+<tr><td>B社_初回見積.pdf</td><td>第1轮</td><td>同案件、不同表记，展示跨格式整理和PDF原文位置</td></tr>
+<tr><td>A社_次回見積.xlsx</td><td>第2轮，独立新案件</td><td>含前轮相同原始费目表记及相同适用条件，金额改变；不用于预先学习</td></tr>
+</table>
+<p>数据是真正的Excel/PDF文件，清楚标注架空。初轮先确认演示工作区为空学习状态（不得清空用户业务数据），完成SDK读取和实际AI调用；然后通过吹き出し修改并持久化。第二轮读取第3份文件，保存的原文→最终fee_id在同scope/context下适用，而本次价格独立取得。</p>
+<p>第一轮无需故意制造AI错误。可以修改实际误识别，也可以将系统建议名称调整为希望的名称；两者要如实说明。注入错误只用于标为INJECTED_TEST_CASE的内部测试，不能冒充模型实际误识别。</p>
+<h3>演示证据</h3>
+<p>保存任务/文件哈希、SDK来源、AI调用性质、人工修正事件、学习记录版本、第2轮匹配理由、本次金额和输出文件绑定。不能把重新显示旧表、预设答案、假调用计数或占位代码当作实动完成。完整金额读取和分类调用分别记录；名称分类免调用不等于整份文件免AI。</p>
+<h3>工程安全测试仍保留，不要求全部对客户演示</h3>
+<p>20/40尺变化、含/不含、条件缺失、跨公司/租户、冲突/撤销、重复保存、旧Excel不变等，继续按第3节和自动化测试验证。取消独立PoC不意味着取消开发测试或本番验收。</p>
+<h3>必要时才复用Demo确认实资料</h3>
+<p>仅当客户有意推进且真实资料带来重要未决问题时，在约定少量资料和取扱条件后复用现有Demo。客户不必编制Master或正解台账。结果据实记录，不扩大为另一个免费项目，也不把这步作为所有概算的必经条件。</p>
+<p>三份自作样例只证明所演示的操作与机制，不证明全部客户格式、实测精度或节省时间。具体商谈交接见docs/07。</p>
+<h2>5. 报告指标</h2>
+<p>分别报告读取完整性、字段正确性、费目分类、错误复用、未确认数量、修正+原文核对+最终确认时间。黄色比例不等于错误率，模型confidence不等于实测准确率。</p>
+<ul>
+<li>total_input_documents / succeeded / failed / excluded(reason) / not_processed：总数守恒。</li>
+<li>independently_expected_lines、found_lines、missing/extra/ambiguous：人工/独立基准照合，不能只从系统已输出行推导完整性。</li>
+<li>classification_memory_applied_count、eligible_exact_context_count、all_classification_rows：同时报告受限分母与全量分母，不能用小分母夸大自动化。</li>
+<li>extraction_ai_calls、classification_ai_calls、retry_calls、provider_usage：分开统计。参考demo中的0真实调用不说明未来AI费用为0。</li>
+<li>incorrect_memory_reuse_count：关注错误自动沿用；关键确定性反例须全部拦截。</li>
+<li>field_accuracy / classification_accuracy：公布定义、样本数和留出方式；不预先承诺95%/100%。</li>
+<li>human_time_baseline vs with_system：包含修改、查原文和最终核对，不只计API秒数；小样本不外推所有格式。</li>
+</ul>
+<p>技术性PASS不代替正式业务验收。以下指标用于内部测试；对外只说明真正测量过的内容，不让客户在初回商谈设计评估体系。正式开发的验收范围另行合意，少量实资料确认只在必要时安排。</p>
+<h2>6. 每阶段最终Review Bundle</h2>
+<p>最低包含：STATUS.json；repository root/branch/HEAD/起始dirty与允许路径；精确changed paths；代码/patch；命令、退出码、日志；测试样本性质与排除项；未执行/不足项；SDK未改和外部调用是否发生；内部SHA256SUMS。</p>
+<p>执行CRC、成员安全、内部SHA与外部ZIP SHA校验。返回ZIP、外置.sha256、VERIFICATION.txt三个绝对路径并停止等待ChatGPTレビュー。失败分支保留真实FAIL/BLOCKED，不授权自动修复/重跑/commit。打包失败则保留原证据与准确错误，不声称有ZIP。</p></div></details><details><summary>05｜依据、已知边界与未决事项</summary><div class="detail-body"><h1>05｜依据、已知边界与未决事项</h1>
+<h2>1. 来源分层</h2>
+<p><strong>U1／客户最新依赖详情（用户在本次对话粘贴）</strong>：本期仅①报价导入形成「原価：単価一覧表」；②売上単价及ドレージ料加利、③数量/円建て试算未决定。客户不做費目一覧事前制作和维护；人工纠错后次回同表记自动识别是必需。</p>
+<p><strong>U2／用户确认的使用方案（本次对话）</strong>：案件名+批量附件；同画面单价表/吹き出し编辑；文件位置点击预览；案件一覧、6～10用户和登录；Excel保存下载；新系统是否需别加工待确认。</p>
+<p><strong>U3／用户确认的协作与商业口径（已更新至2026-09-11）</strong>：不另设专门PoC，做商谈Demo；必要时才用同一Demo确认少量实资料，不要求另一个验证系统或必经阶段。Demo及约定范围内的必要资料确认不另收费；正式开发按剩余生产化工作报价。ChatGPTレビュー、Codex有限实现、阶段Review Bundle，以及不改SDK/不干扰批量验证的边界不变。</p>
+<p><strong>U5／用户最新演示与交接指示</strong>：2个Excel＋1个PDF。第1轮上传2份并实际解析、预览、修正保存；第2轮新案件上传第3份，确认同原文表记和条件的分类复用以及新金额读取。島野さん提案结束后请森田さん演示，客户质疑放在Demo后。资料使用提案语气，不代表实动Demo已经完成。</p>
+<p><strong>U4／上传的Markdown「已保存补证结果的有界收尾预览」</strong>：从9,000条case元数据选择64代表、覆盖50 profile/classification族，不是100K验收；复用一次既有finalizer已存输出，没有重新调用SDK/Reference/Comparator或读取原始工作簿（源文件第5～7行）。保留329历史运行字段/父容器缺口；资源预览exit=1和类型结果FAIL不能改成通过（第17、35～37行）。仅用来限制SDK验证状态的表述，不从该文件推断公共API签名或本项目已验证能力。</p>
+<p>业务范围以U1/U2为准；演示、商业流程和会议交接以最新U3/U5为准，旧PPT中费用Master请求、新系统别加工主流程、先前报价数字均不沿用为新框架契约。</p>
+<h2>2. 本框架选择，不应冒充客户原话</h2>
+<ul>
+<li>模块化单体、React/TypeScript、Python/FastAPI、PostgreSQL、一套私有存储和worker。</li>
+<li>精确确认记录优先，未知由AI建议；v1公司范围+完整上下文，不自动跨公司泛化。</li>
+<li>事务、版本、幂等、历史、冲突与撤销、旧表快照不自动变化。</li>
+<li>UI不增加日常Master维护页；冲突/类别选择在业务吹き出し解决。</li>
+<li>初期不fine-tuning，不强行上向量数据库、多Agent、Redis或Kubernetes。</li>
+</ul>
+<p>以上作为v1实施基线；改变需要说明影响并同步代码/测试/文档，不等于绝对不能调整。</p>
+<h2>3. 不要再次向客户问已经回答的问题</h2>
+<table>
+<tr><th>已明确</th><th>禁止再作为待答问题</th></tr>
+<tr><td>本期①原价单价表</td><td>不重新让客户选择是否首期做利润试算</td></tr>
+<tr><td>不事前做/维护费用清单</td><td>不要求客户编制完整Master、同义词表、所有规则</td></tr>
+<tr><td>纠错学习必需</td><td>不把学习设为可选或未来追加</td></tr>
+<tr><td>不另设专门PoC</td><td>不恢复独立PoC或用改名后的必经验证阶段替代；必要时复用Demo少量确认，不另收费</td></tr>
+<tr><td>同页面修改+原文预览</td><td>不默认删掉预览，或跳到独立确认画面</td></tr>
+</table>
+<h2>4. 保留的未决条件</h2>
+<table>
+<tr><th>未决项</th><th>当前基线</th><th>何时解决</th></tr>
+<tr><td>原价单价表最终排布</td><td>提供样例，让客户确认；不让其从零设计DB</td><td>范围整理时；无现例则由SANZO提出Demo样式</td></tr>
+<tr><td>是否另有新系统取込加工</td><td>主流程不包含，保留待确认；不宣称已导入通过</td><td>事前询问或初回补充，正式范围前</td></tr>
+<tr><td>真实公司/航线/商品/报价结构</td><td>不从公司官网或虚构画面推断</td><td>样本/业务概览</td></tr>
+<tr><td>真实SDK接口/稳定依赖</td><td>Adapter占位，调用即失败而非假成功</td><td>W0，只读核对</td></tr>
+<tr><td>单价规则与scope安全性</td><td>v1保守，未知不自动适用；由资料推导，客户只业务确认</td><td>Demo内部测试／必要样本确认</td></tr>
+<tr><td>外部AI/OCR/部署与认证</td><td>默认不外传；单部署平台或客户环境待定</td><td>真实调用前/正式见积前</td></tr>
+<tr><td>限额、保留期、性能、恢复要求</td><td>合理有界配置由工程先提案，非无限承诺</td><td>正式运行前</td></tr>
+</table>
+<h2>5. 工程参考（均为官方资料，核对日期2026-09-10）</h2>
+<p>这些参考只支撑实现机制，不代替客户需求、SDK真实契约或实际客户资料的适用性确认。</p>
+<ul>
+<li><strong>T1</strong> FastAPI — Bigger Applications: https://fastapi.tiangolo.com/tutorial/bigger-applications/</li>
+<li><strong>T2</strong> OpenAI — Prompt engineering（提供相关上下文与例子）: https://developers.openai.com/api/docs/guides/prompt-engineering</li>
+<li><strong>T3</strong> OpenAI — Structured model outputs（结构约束仍可能有内容错误，需处理拒绝）: https://developers.openai.com/api/docs/guides/structured-outputs</li>
+<li><strong>T4</strong> OpenAI — Data controls（训练使用、存储及保留按功能和配置区分）: https://developers.openai.com/api/docs/guides/your-data</li>
+<li><strong>T5</strong> OWASP — File Upload Cheat Sheet（鉴权、类型/大小/文件名、私有存储等）: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html</li>
+<li><strong>T6</strong> PostgreSQL — SELECT locking / SKIP LOCKED（队列表适用性与限制）: https://www.postgresql.org/docs/current/sql-select.html</li>
+<li><strong>T7</strong> PostgreSQL — Transaction Isolation（并发和事务边界）: https://www.postgresql.org/docs/current/transaction-iso.html</li>
+</ul>
+<p>没有访问客户服务器、SDK仓库或OpenAI API；没有测算当前云价格或性能，也不建议固定任何未经项目验证的模型型号。</p></div></details><details><summary>07｜三文件Demo与商谈交接</summary><div class="detail-body"><h1>07｜三文件Demo与商谈交接</h1>
+<p><strong>适用基线：v1.1.0，2026-09-11。演示计划，不是已运行的真实SDK/AI/Web证据。</strong></p>
+<h2>目的和边界</h2>
+<p>通过一个小型可操作Demo，让客户看到SANZO理解了原价单价表、原文核对和纠错学习三个重点。不再以专门PoC阶段推进，不另建第二套验证系统。Demo≠正式系统交付≠客户所有报价都已验证。</p>
+<h2>输入与操作</h2>
+<p>固定准备2个Excel和1个电子PDF，均为自制虚构业务样例，不含客户机密。第1轮A社Excel＋B社PDF属于同一案件；第2轮A社的新Excel属于另一个案件。后续表记和适用条件相同，单价改变。</p>
+<p>第1轮：案件名→批量上传两份→实际SDK读取→必要AI识别→原价单价列表→吹き出し显示原文和位置→点击预览→修改费用名称→保存当前表、学习记录和历史。</p>
+<p>第2轮：创建新案件→只上传第3份Excel→读取本次金额→匹配第1轮原始表记与人工最终名称→同范围/条件优先复用→展示新单价→列表保存/Excel输出。</p>
+<p>必须记住原文→人工最终fee_id，而不是AI旧答案→新答案。第3份不能提前输入分类答案。第二轮不能只是读上次缓存；应引用真实保存的学习版本。金额变化本身不要求重新学习名称。</p>
+<p>原文不修改；预览从真实源位置取得。PDF按页，Excel按单元格周边。未实现的Office完整样式等不表述为已完成。</p>
+<h2>不为演示造假</h2>
+<p>不为了保证修正环节出现而强制模型故意误识别。可使用自然的错识别或演示将名称调整为用户希望的名称。测试注入必须明示。SDK、AI、预览、保存和知识复用如果是占位/模拟/预计算结果，应明确告知；不能把参考核心或截图当作全流程实装。</p>
+<p>本次文档修订没有生成3个业务样例文件，没有连接真实SDK/AI，没有实现实动Web Demo。这些是W3及其前置步骤的任务。对外展示前先在真实演示环境完整彩排。</p>
+<h2>会议分工</h2>
+<p>客户说明→我方技术担当或社长提问→島野さん公司介绍（2～3分）→島野さん提案→森田さんDemo→客户问题。</p>
+<p>提案中不重复客户现状调查，也不在Demo前结束整场会议。岛野最后按下面交接：</p>
+<pre><code>以上が、ご提案内容のご説明です。
+ここからは、弊社の森田より、実際の画面を使ってご説明いたします。
+森田さん、デモをお願いいたします。</code></pre>
+<p>森田开场：</p>
+<pre><code>それでは、デモをご覧いただきます。
+今回は、説明用に用意した3つのサンプルで、取り込みから修正、次の案件への反映までをご紹介します。</code></pre>
+<p>Demo后再邀请客户质疑。之后根据意向整理范围、概算与正式见积、合同和本开发。只有必要且得到许可时才在同一Demo上确认少量实资料，不反复免费开发，不把此确认改成一律必经的工程。</p>
+<h2>安全与后续开发</h2>
+<p>保持W0只读查真实SDK契约、独立业务repo、阶段限定、未授权不安装升级/收费/外传/发布、每阶段Review Bundle及停止レビュー。取消对客户单设PoC，不取消工程测试、独立复核或正式系统安全/验收。</p></div></details><footer>v1.1.0｜本次修订不修改SDK、参考核心代码或JSON契约。真实客户资料适用性与本番交付状态分别报告。</footer></main></body></html>

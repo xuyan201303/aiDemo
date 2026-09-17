@@ -1,0 +1,8 @@
+PASS reference_correction.schema.json correction_first.synthetic.json
+PASS reference_decision.schema.json decision_reuse.synthetic.json
+PASS reference_decision.schema.json decision_unknown.synthetic.json
+PASS rejected negative correction 1
+PASS rejected negative correction 2
+PASS rejected negative correction 3
+PASS rejected negative correction 4
+PASS rejected negative correction 5

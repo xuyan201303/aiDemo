@@ -1,0 +1,951 @@
+{
+  "schema_version": 1,
+  "origin": "MOCK_SDK",
+  "fixture_version": "sanzo-raw-fixture-v1",
+  "sample": {
+    "filename": "02_B社_初回見積.pdf",
+    "sha256": "9cbb60b4c8a0c2b5970b3ffe2cec2d03a4a5ceff7a59d6de01dec7cafecc618e",
+    "media_type": "application/pdf"
+  },
+  "source_verification": {
+    "method": "LOCAL_TEXT_LAYER_AND_ORIGINAL_PAGE_VISUAL_CHECK",
+    "notice": "デモ用解析データ／SDK未接続",
+    "sdk_execution": "NOT_RUN",
+    "details": [
+      "One page; all five printed table rows checked against native text and the rendered uploaded-format original.",
+      "Complete labels, amount tokens, currencies, units and conditions preserve original spelling.",
+      "Service/extra terms are separate complete segments divided by the printed fullwidth slash.",
+      "Only page-level preview location is verified; field coordinates/highlights are unavailable.",
+      "No document-wide transport scope is printed. Missing transport_mode stays unknown; do not infer N/A or unrestricted applicability."
+    ],
+    "missing_fields": [
+      {
+        "record_id": "page1-table-row-1",
+        "field_name": "transport_mode",
+        "reason": "No explicit complete transport-mode field; unknown is not wildcard."
+      },
+      {
+        "record_id": "page1-table-row-2",
+        "field_name": "transport_mode",
+        "reason": "No explicit complete transport-mode field; unknown is not wildcard."
+      },
+      {
+        "record_id": "page1-table-row-3",
+        "field_name": "transport_mode",
+        "reason": "No explicit complete transport-mode field; unknown is not wildcard."
+      },
+      {
+        "record_id": "page1-table-row-4",
+        "field_name": "transport_mode",
+        "reason": "No explicit complete transport-mode field; unknown is not wildcard."
+      },
+      {
+        "record_id": "page1-table-row-5",
+        "field_name": "transport_mode",
+        "reason": "No explicit complete transport-mode field; unknown is not wildcard."
+      }
+    ]
+  },
+  "blocks": [
+    {
+      "source_id": "page1-company",
+      "raw_text": "SANZO Demo Forwarder B（架空）",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "company",
+          "record_id": "page1-document",
+          "scope": "DOCUMENT",
+          "applies_to_record_ids": [
+            "page1-table-row-1",
+            "page1-table-row-2",
+            "page1-table-row-3",
+            "page1-table-row-4",
+            "page1-table-row-5"
+          ]
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_COMPANY_FIELD",
+          "position": "above quotation number",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row1-raw_label",
+      "raw_text": "OCEAN FREIGHT 20'",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "raw_label",
+          "record_id": "page1-table-row-1",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 1,
+          "column_header": "費目表記",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row1-equipment",
+      "raw_text": "20FT",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "equipment",
+          "record_id": "page1-table-row-1",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 1,
+          "column_header": "適用条件",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row1-currency",
+      "raw_text": "USD",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "currency",
+          "record_id": "page1-table-row-1",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 1,
+          "column_header": "通貨",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row1-raw_value",
+      "raw_text": "1,150.00",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "raw_value",
+          "record_id": "page1-table-row-1",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 1,
+          "column_header": "見積単価",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row1-billing_unit",
+      "raw_text": "コンテナ",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "billing_unit",
+          "record_id": "page1-table-row-1",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 1,
+          "column_header": "課金単位",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row1-charge_scope",
+      "raw_text": "海上輸送・港間",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "charge_scope",
+          "record_id": "page1-table-row-1",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "EXPLICIT_PRINTED_DELIMITED_FIELD",
+          "table_row_number": 1,
+          "column_header": "サービス範囲・付帯条件",
+          "coordinates": "UNAVAILABLE",
+          "original_combined_field": "海上輸送・港間／追加作業なし",
+          "delimiter": "／",
+          "segment_index": 0
+        }
+      }
+    },
+    {
+      "source_id": "page1-row1-extra_terms",
+      "raw_text": "追加作業なし",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "extra_terms",
+          "record_id": "page1-table-row-1",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "EXPLICIT_PRINTED_DELIMITED_FIELD",
+          "table_row_number": 1,
+          "column_header": "サービス範囲・付帯条件",
+          "coordinates": "UNAVAILABLE",
+          "original_combined_field": "海上輸送・港間／追加作業なし",
+          "delimiter": "／",
+          "segment_index": 1
+        }
+      }
+    },
+    {
+      "source_id": "page1-row2-raw_label",
+      "raw_text": "OCEAN FREIGHT 40'",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "raw_label",
+          "record_id": "page1-table-row-2",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 2,
+          "column_header": "費目表記",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row2-equipment",
+      "raw_text": "40FT",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "equipment",
+          "record_id": "page1-table-row-2",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 2,
+          "column_header": "適用条件",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row2-currency",
+      "raw_text": "USD",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "currency",
+          "record_id": "page1-table-row-2",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 2,
+          "column_header": "通貨",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row2-raw_value",
+      "raw_text": "1,850.00",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "raw_value",
+          "record_id": "page1-table-row-2",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 2,
+          "column_header": "見積単価",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row2-billing_unit",
+      "raw_text": "コンテナ",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "billing_unit",
+          "record_id": "page1-table-row-2",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 2,
+          "column_header": "課金単位",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row2-charge_scope",
+      "raw_text": "海上輸送・港間",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "charge_scope",
+          "record_id": "page1-table-row-2",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "EXPLICIT_PRINTED_DELIMITED_FIELD",
+          "table_row_number": 2,
+          "column_header": "サービス範囲・付帯条件",
+          "coordinates": "UNAVAILABLE",
+          "original_combined_field": "海上輸送・港間／追加作業なし",
+          "delimiter": "／",
+          "segment_index": 0
+        }
+      }
+    },
+    {
+      "source_id": "page1-row2-extra_terms",
+      "raw_text": "追加作業なし",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "extra_terms",
+          "record_id": "page1-table-row-2",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "EXPLICIT_PRINTED_DELIMITED_FIELD",
+          "table_row_number": 2,
+          "column_header": "サービス範囲・付帯条件",
+          "coordinates": "UNAVAILABLE",
+          "original_combined_field": "海上輸送・港間／追加作業なし",
+          "delimiter": "／",
+          "segment_index": 1
+        }
+      }
+    },
+    {
+      "source_id": "page1-row3-raw_label",
+      "raw_text": "DOCUMENTATION FEE",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "raw_label",
+          "record_id": "page1-table-row-3",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 3,
+          "column_header": "費目表記",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row3-equipment",
+      "raw_text": "共通",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "equipment",
+          "record_id": "page1-table-row-3",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 3,
+          "column_header": "適用条件",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row3-currency",
+      "raw_text": "JPY",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "currency",
+          "record_id": "page1-table-row-3",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 3,
+          "column_header": "通貨",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row3-raw_value",
+      "raw_text": "7,500.00",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "raw_value",
+          "record_id": "page1-table-row-3",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 3,
+          "column_header": "見積単価",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row3-billing_unit",
+      "raw_text": "B/L",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "billing_unit",
+          "record_id": "page1-table-row-3",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 3,
+          "column_header": "課金単位",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row3-charge_scope",
+      "raw_text": "書類作成",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "charge_scope",
+          "record_id": "page1-table-row-3",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "EXPLICIT_PRINTED_DELIMITED_FIELD",
+          "table_row_number": 3,
+          "column_header": "サービス範囲・付帯条件",
+          "coordinates": "UNAVAILABLE",
+          "original_combined_field": "書類作成／追加作業なし",
+          "delimiter": "／",
+          "segment_index": 0
+        }
+      }
+    },
+    {
+      "source_id": "page1-row3-extra_terms",
+      "raw_text": "追加作業なし",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "extra_terms",
+          "record_id": "page1-table-row-3",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "EXPLICIT_PRINTED_DELIMITED_FIELD",
+          "table_row_number": 3,
+          "column_header": "サービス範囲・付帯条件",
+          "coordinates": "UNAVAILABLE",
+          "original_combined_field": "書類作成／追加作業なし",
+          "delimiter": "／",
+          "segment_index": 1
+        }
+      }
+    },
+    {
+      "source_id": "page1-row4-raw_label",
+      "raw_text": "CUSTOMS CLEARANCE",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "raw_label",
+          "record_id": "page1-table-row-4",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 4,
+          "column_header": "費目表記",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row4-equipment",
+      "raw_text": "共通",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "equipment",
+          "record_id": "page1-table-row-4",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 4,
+          "column_header": "適用条件",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row4-currency",
+      "raw_text": "JPY",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "currency",
+          "record_id": "page1-table-row-4",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 4,
+          "column_header": "通貨",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row4-raw_value",
+      "raw_text": "11,500.00",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "raw_value",
+          "record_id": "page1-table-row-4",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 4,
+          "column_header": "見積単価",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row4-billing_unit",
+      "raw_text": "申告",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "billing_unit",
+          "record_id": "page1-table-row-4",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 4,
+          "column_header": "課金単位",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row4-charge_scope",
+      "raw_text": "輸入通関",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "charge_scope",
+          "record_id": "page1-table-row-4",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "EXPLICIT_PRINTED_DELIMITED_FIELD",
+          "table_row_number": 4,
+          "column_header": "サービス範囲・付帯条件",
+          "coordinates": "UNAVAILABLE",
+          "original_combined_field": "輸入通関／追加作業なし",
+          "delimiter": "／",
+          "segment_index": 0
+        }
+      }
+    },
+    {
+      "source_id": "page1-row4-extra_terms",
+      "raw_text": "追加作業なし",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "extra_terms",
+          "record_id": "page1-table-row-4",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "EXPLICIT_PRINTED_DELIMITED_FIELD",
+          "table_row_number": 4,
+          "column_header": "サービス範囲・付帯条件",
+          "coordinates": "UNAVAILABLE",
+          "original_combined_field": "輸入通関／追加作業なし",
+          "delimiter": "／",
+          "segment_index": 1
+        }
+      }
+    },
+    {
+      "source_id": "page1-row5-raw_label",
+      "raw_text": "DELIVERY CHARGE",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "raw_label",
+          "record_id": "page1-table-row-5",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 5,
+          "column_header": "費目表記",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row5-equipment",
+      "raw_text": "共通",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "equipment",
+          "record_id": "page1-table-row-5",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 5,
+          "column_header": "適用条件",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row5-currency",
+      "raw_text": "JPY",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "currency",
+          "record_id": "page1-table-row-5",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 5,
+          "column_header": "通貨",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row5-raw_value",
+      "raw_text": "9,000.00",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "raw_value",
+          "record_id": "page1-table-row-5",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 5,
+          "column_header": "見積単価",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row5-billing_unit",
+      "raw_text": "配送1回",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "billing_unit",
+          "record_id": "page1-table-row-5",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "COMPLETE_PRINTED_TABLE_FIELD",
+          "table_row_number": 5,
+          "column_header": "課金単位",
+          "coordinates": "UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "source_id": "page1-row5-charge_scope",
+      "raw_text": "陸送・配送のみ",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "charge_scope",
+          "record_id": "page1-table-row-5",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "EXPLICIT_PRINTED_DELIMITED_FIELD",
+          "table_row_number": 5,
+          "column_header": "サービス範囲・付帯条件",
+          "coordinates": "UNAVAILABLE",
+          "original_combined_field": "陸送・配送のみ／設置・組立なし",
+          "delimiter": "／",
+          "segment_index": 0
+        }
+      }
+    },
+    {
+      "source_id": "page1-row5-extra_terms",
+      "raw_text": "設置・組立なし",
+      "source_ref": {
+        "kind": "PDF_PAGE",
+        "locator_status": "PAGE_ONLY",
+        "locator": {
+          "page_number": 1
+        },
+        "text_verification": "VERIFIED",
+        "evidence_unit": {
+          "kind": "FIXTURE_FIELD",
+          "field_name": "extra_terms",
+          "record_id": "page1-table-row-5",
+          "scope": "LINE"
+        },
+        "fixture_boundary": {
+          "method": "EXPLICIT_PRINTED_DELIMITED_FIELD",
+          "table_row_number": 5,
+          "column_header": "サービス範囲・付帯条件",
+          "coordinates": "UNAVAILABLE",
+          "original_combined_field": "陸送・配送のみ／設置・組立なし",
+          "delimiter": "／",
+          "segment_index": 1
+        }
+      }
+    }
+  ]
+}

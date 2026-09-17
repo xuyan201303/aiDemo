@@ -1,0 +1,42 @@
+{
+  "status": "OFFLINE_REFERENCE_DEMO_ONLY",
+  "fixtures": "synthetic; not client quotations",
+  "real_sdk_calls": 0,
+  "real_openai_calls": 0,
+  "first": {
+    "raw": "送货钱",
+    "decision": "AI_REQUIRED",
+    "stub_ai_candidate": "配送料",
+    "human_saved": "配送费"
+  },
+  "save": {
+    "event_id": "c6b4d621-3d97-428f-bfe7-d0e6bcf350b6",
+    "item_id": "item-1",
+    "item_version": 2,
+    "fee_id": "1066ed5a-8e03-4b41-b5f1-cf47cecf3d20",
+    "unit_price": "10",
+    "memory_effect": "ACTIVE",
+    "memory_version": 1
+  },
+  "second_after_reopen": {
+    "kind": "MEMORY_APPLIED",
+    "reason": "EXACT_CONFIRMED_CONTEXT",
+    "unit_price": "20",
+    "currency": "CNY",
+    "fee_id": "1066ed5a-8e03-4b41-b5f1-cf47cecf3d20",
+    "fee_name": "配送费",
+    "memory_version": 1,
+    "classification_ai_calls": 0
+  },
+  "third_new_label": {
+    "kind": "AI_REQUIRED",
+    "reason": "NO_CONFIRMED_MAPPING",
+    "unit_price": "20",
+    "currency": "CNY",
+    "fee_id": null,
+    "fee_name": null,
+    "memory_version": 0,
+    "classification_ai_calls": "not executed; only decision emitted"
+  },
+  "limits": "Does not measure AI accuracy or total document-stage AI usage."
+}

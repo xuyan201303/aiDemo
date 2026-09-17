@@ -1,0 +1,9 @@
+{
+  "item_id": "item-1",
+  "expected_item_version": 1,
+  "expected_memory_version": 0,
+  "idempotency_key": "example-save",
+  "new_fee_name": "配送费",
+  "unit_price": null,
+  "replace_existing_mapping": false
+}

@@ -1,0 +1,9 @@
+{
+  "kind": "MEMORY_APPLIED",
+  "reason": "EXACT_CONFIRMED_CONTEXT",
+  "unit_price": "20",
+  "currency": "CNY",
+  "fee_id": "example-fee-id",
+  "fee_name": "配送费",
+  "memory_version": 1
+}

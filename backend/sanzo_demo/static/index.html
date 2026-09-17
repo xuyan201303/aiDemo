@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SANZO | 原価単価一覧表</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/workflow.js" defer></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="SANZO ホーム"><span class="brand-mark" aria-hidden="true">S</span><span>SANZO<small>原価単価一覧表</small></span></a>
+    <span class="demo-label"><span class="status-dot"></span>ローカル商談 Demo</span>
+  </header>
+  <main>
+    <div class="page-heading"><div><p class="eyebrow">COST COMPARISON</p><h1>原価を比べる。確認を、次の案件へ。</h1><p class="subtle">原文を確認して費目を修正すると、同じ会社・条件の新しい案件に確認済みの名称を引き継ぎます。</p></div></div>
+    <section id="connection-panel" class="connection-panel" aria-label="接続状態"><div class="connection-title">接続状態を確認しています…</div></section>
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+
+    <section class="workspace panel" aria-labelledby="case-heading">
+      <div class="section-title"><div class="step-number">1</div><div><h2 id="case-heading">案件と資料</h2><p class="subtle">1 回目は Excel と PDF、2 回目は新しい案件に後続の Excel を追加します。</p></div></div>
+      <div class="case-toolbar">
+        <label class="case-select-label">案件<select id="case-select" aria-label="案件を選択"><option value="">案件を選択してください</option></select></label>
+        <button id="new-case-button" class="button secondary" type="button">＋ 新しい案件</button>
+        <div id="case-meta" class="case-meta"></div>
+      </div>
+      <form id="new-case-form" class="inline-form" hidden>
+        <label>新しい案件名<input id="case-name" name="name" maxlength="200" required autocomplete="off" placeholder="案件名を入力"></label>
+        <button class="button primary" type="submit">案件を作成</button>
+        <button id="cancel-case" class="button quiet" type="button">キャンセル</button>
+      </form>
+      <form id="upload-form" class="upload-zone">
+        <div class="upload-symbol" aria-hidden="true">↥</div>
+        <div class="upload-copy"><strong>比較する見積資料を追加</strong><p id="upload-mode-copy">Excel＋PDF をまとめて選択できます。再選択で追加します。</p></div>
+        <input id="files" name="file" type="file" accept=".xlsx,.pdf" multiple aria-label="アップロードする資料" disabled>
+        <button id="upload-button" class="button primary" type="submit" disabled>アップロード・解析開始</button>
+      </form>
+      <div class="pending-panel"><p id="pending-count" role="status">0 件の待ちリスト</p><ul id="pending-files"></ul></div>
+      <div id="ai-pause" class="notice error" role="status" hidden></div>
+      <div id="upload-progress" class="subtle" role="status"></div>
+      <div id="documents" class="documents"></div>
+      <p id="no-documents" class="empty-inline">案件を作成し、見積資料を追加してください。</p>
+    </section>
+
+    <section class="comparison panel" aria-labelledby="comparison-heading">
+      <div class="section-title comparison-heading"><div class="step-number">2</div><div><h2 id="comparison-heading">原価：単価一覧表</h2><p class="subtle">左端の「確認・修正」から統一費目名を確認できます。単価は今回の資料の値です。</p></div><div class="comparison-actions"><span id="item-count" class="count-pill">0 明細</span><button id="export-button" class="button secondary" type="button" disabled>草稿 Excel ダウンロード ↓</button></div></div>
+      <div class="table-legend"><span>✓ 確認済み</span><span>● AI仮判定</span><span>⚠ 確認必要</span><span>— 見積なし</span></div>
+      <div id="comparison-table" class="table-scroll"></div>
+      <div id="empty-comparison" class="empty-state"><div class="empty-icon" aria-hidden="true">▤</div><h3>ここに単価比較表が表示されます</h3><p>資料を追加し、「アップロード・解析開始」を選択してください。<br>読み取り結果と、必要に応じた AI の未確認提案をここに表示します。</p></div>
+    </section>
+    <footer class="page-footer"><span>SANZO · 三ファイル商談 Demo</span><span>名称の確認記録を再利用します。過去の価格は引き継ぎません。</span></footer>
+  </main>
+
+  <dialog id="manual-dialog" class="form-dialog" aria-labelledby="manual-heading">
+    <form id="manual-form">
+      <div class="dialog-heading"><div><span class="eyebrow">MANUAL ENTRY</span><h2 id="manual-heading">内部デバッグ：原文を確認して人工入力</h2></div><button type="button" class="icon-button close-dialog" aria-label="閉じる">×</button></div>
+      <div class="manual-warning">内部デバッグの人工入力です。SDK による抽出や AI による識別の結果ではありません。</div>
+      <p id="manual-document-name" class="source-filename"></p>
+      <button id="manual-preview-button" class="text-button" type="button">資料の原文を開く ↗</button>
+      <div class="form-grid">
+        <label class="full">原文の費目表記<input name="raw_label" required maxlength="300" placeholder="資料に書かれた表記をそのまま入力"></label>
+        <label>今回の単価<input name="unit_price" required inputmode="decimal" pattern="-?[0-9]+(\.[0-9]+)?" placeholder="今回の資料の金額"></label>
+        <label>通貨<input name="currency" required maxlength="3" pattern="[A-Za-z]{3}" placeholder="例：JPY"></label>
+        <label class="full">会社 ID<input name="forwarder_id" maxlength="100" placeholder="同じ会社には同じ ID ／ 不明なら空白"></label>
+      </div>
+      <fieldset><legend>この資料に適用する条件</legend><p class="subtle">会社や条件が不明な場合は空白にしてください。不明な条件は「すべてに一致」として扱わず、自動再利用を止めます。</p>
+        <div class="form-grid">
+          <label>輸送モード<input name="transport_mode" maxlength="100" placeholder="例：海上"></label>
+          <label>機材・コンテナ<input name="equipment" maxlength="100" placeholder="例：20FT"></label>
+          <label>課金単位<input name="billing_unit" maxlength="100" placeholder="例：コンテナ"></label>
+          <label>費用の適用範囲<input name="charge_scope" maxlength="100" placeholder="資料の適用範囲"></label>
+          <label class="full">追加条件<input name="extra_terms" maxlength="300" placeholder="条件なしと確認できた場合は「なし」"></label>
+        </div>
+      </fieldset>
+      <label class="checkbox-label"><input id="source-acknowledgment" type="checkbox" required><span>アップロードした資料を確認し、原文表記・今回の金額・通貨と、分かる会社・適用条件を入力しました。不明な会社・条件は空白にしました。</span></label>
+      <p class="subtle">原文のページ・セル位置は未取得です。確認済みの名称がある場合のみ、保存された費目対応を適用します。</p>
+      <div id="manual-error" class="form-error" role="alert" hidden></div>
+      <div class="dialog-actions"><button type="button" class="button quiet close-dialog">キャンセル</button><button id="manual-submit" type="submit" class="button primary">明細を追加</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="edit-dialog" class="edit-dialog" aria-labelledby="edit-heading">
+    <form id="edit-form" novalidate>
+      <div class="dialog-heading"><h2 id="edit-heading">統一費目を確認</h2><button type="button" class="icon-button close-dialog" aria-label="閉じる">×</button></div>
+      <div id="edit-members" class="row-members" aria-label="確認する原文"></div>
+      <div class="name-save-row">
+        <div class="fee-name-field">
+          <label for="edit-fee-name">確認後の統一費目名</label>
+          <input id="edit-fee-name" role="combobox" aria-autocomplete="list" aria-controls="fee-candidates" aria-expanded="false" aria-describedby="edit-error edit-intent-help" autocomplete="off" placeholder="お客様が確認した名称">
+          <div id="fee-candidates" class="fee-candidates" role="listbox" aria-label="既存の統一費目候補" hidden></div>
+        </div>
+        <button id="save-correction" type="submit" class="button primary">確認して保存</button>
+      </div>
+      <p id="edit-intent-help" class="subtle" role="status" hidden></p>
+      <button id="reclassify-members" class="text-button" type="button" aria-pressed="false" hidden>この明細の分類を変更</button>
+      <div id="edit-error" class="form-error" role="alert" hidden></div>
+      <details id="edit-details" class="edit-details">
+        <summary>詳細を見る</summary>
+        <p id="edit-warning" class="edit-warning" role="status" hidden></p>
+        <p id="edit-dimensions" class="edit-dimensions"></p>
+        <button id="refresh-item" type="button" class="text-button refresh-item" hidden>最新を読み直す</button>
+        <p class="subtle"><span id="edit-unified-name"></span> ／ <span id="edit-status"></span></p>
+        <p class="subtle" id="edit-member-count"></p>
+        <div id="edit-member-details"></div>
+        <label class="checkbox-label reconfirm"><input id="replace-mapping" type="checkbox"><span>撤回済みの対応を、この費目で明示的に再開する</span></label>
+        <details class="revoke-details"><summary>個別の原文表記の確認記録を撤回する</summary><label>対象の明細<select id="revoke-member"></select></label><p class="subtle">現在の案件の表示は残します。次の案件には自動適用しません。</p><label>撤回理由<input id="revoke-reason" maxlength="500" placeholder="撤回する理由"></label><button id="revoke-button" type="button" class="button danger">確認記録を撤回</button></details>
+      </details>
+    </form>
+  </dialog>
+
+  <dialog id="preview-dialog" class="preview-dialog" aria-labelledby="preview-heading">
+    <div class="dialog-heading"><div><h2 id="preview-heading">原文プレビュー</h2><p id="preview-filename" class="subtle"></p></div><button type="button" class="icon-button close-dialog" aria-label="閉じる">×</button></div>
+    <p id="preview-note" class="preview-note">今回の原文と、取得済みの出典位置を確認します。</p>
+    <iframe id="preview-frame" title="アップロード資料の原文プレビュー" sandbox="allow-same-origin"></iframe>
+  </dialog>
+</body>
+</html>

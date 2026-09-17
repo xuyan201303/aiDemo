@@ -1,0 +1,18 @@
+[
+  {
+    "test": "safe_bundle_keeps_blocked_status",
+    "result": "PASS"
+  },
+  {
+    "test": "unsafe_member_rejected",
+    "result": "PASS"
+  },
+  {
+    "test": "external_hash_mismatch_rejected",
+    "result": "PASS"
+  },
+  {
+    "test": "raw_workbook_extension_excluded",
+    "result": "PASS"
+  }
+]

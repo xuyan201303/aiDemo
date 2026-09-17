@@ -1,0 +1,26 @@
+FROM python:3.12.13-slim
+LABEL org.sanzo.project="sanzo-cost-table-demo"
+# The provided PDF uses unembedded Japanese CID fonts. Install fallback fonts
+# only in this disposable app image; never change host or SDK environments.
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y fonts-noto-cjk=1:20240730+repack1-1 \
+    && rm -rf /var/lib/apt/lists/*
+RUN python -m venv /opt/sanzo-venv
+ENV PATH="/opt/sanzo-venv/bin:$PATH"
+COPY requirements-demo.lock /tmp/requirements-demo.lock
+COPY sdk/document_processing_sdk-1.8.0-py3-none-any.whl /opt/sanzo-wheel/document_processing_sdk-1.8.0-py3-none-any.whl
+RUN echo "d791e0602ef138f50a065cd4cc5d3dca801226822b74328230f2faa2c0c75666  /opt/sanzo-wheel/document_processing_sdk-1.8.0-py3-none-any.whl" | sha256sum --check - \
+    && python -m pip install --no-cache-dir -r /tmp/requirements-demo.lock \
+        '/opt/sanzo-wheel/document_processing_sdk-1.8.0-py3-none-any.whl[pdf,excel]' \
+    && python -m pip check \
+    && useradd --uid 10001 --create-home sanzo \
+    && mkdir -p /data/uploads && chown sanzo:sanzo /data/uploads
+COPY backend /workspace/backend
+COPY reference_core /workspace/reference_core
+COPY demo_materials/fixtures /workspace/demo_materials/fixtures
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
+    SANZO_SDK_WHEEL_PATH=/opt/sanzo-wheel/document_processing_sdk-1.8.0-py3-none-any.whl \
+    PYTHONPATH=/workspace/backend:/workspace/reference_core
+WORKDIR /workspace
+USER sanzo
+CMD ["python", "-m", "uvicorn", "sanzo_demo.app:from_environment", "--factory", "--host", "0.0.0.0", "--port", "8765", "--no-proxy-headers"]

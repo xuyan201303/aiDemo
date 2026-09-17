@@ -1,0 +1,25 @@
+{
+  "framework_version": "1.1.0",
+  "revision_date": "2026-09-11",
+  "status": "DOCUMENTATION_PROCESS_REVISION_COMPLETE_REFERENCE_TESTS_PASS",
+  "implementation_change": "NONE: reference_core, contracts and tools byte-identical to v1.0.0",
+  "workflow": "three-file sales Demo; optional necessary real-document check reuses same Demo; no dedicated PoC stage",
+  "meeting_handoff": "Shimano proposal -> Morita Demo -> customer Q&A",
+  "unit_tests": {
+    "executed": 46,
+    "passed": 46,
+    "backend": "SQLite offline reference; synthetic data"
+  },
+  "contract_checks": {
+    "executed": 8,
+    "passed": 8
+  },
+  "real_sdk_integration": "NOT_IMPLEMENTED_OR_TESTED",
+  "real_openai_integration": "NOT_IMPLEMENTED_OR_TESTED",
+  "real_three_file_web_demo": "NOT_IMPLEMENTED_OR_EXECUTED",
+  "sample_excel_pdf_creation_this_revision": "NOT_PERFORMED",
+  "postgresql_and_production_ui": "NOT_IMPLEMENTED_OR_TESTED",
+  "user_mac_or_sdk_repo": "NOT_ACCESSED_OR_MODIFIED",
+  "next_stage_instructions": "W0 only, when separately executed; stage Review Bundle and independent review unchanged",
+  "pricing": "No fixed development price; no dedicated PoC project or separate demo charge"
+}

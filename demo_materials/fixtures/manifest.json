@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "origin": "MOCK_SDK",
+  "fixture_version": "sanzo-raw-fixture-v1",
+  "fixtures": [
+    {
+      "sample_sha256": "637537223ea2d220ba658e1eae7ba6c9174d17f3f1d1e5e5bd85bc712611dd54",
+      "sample_filename": "01_A社_初回見積.xlsx",
+      "fixture_file": "01.raw.json",
+      "fixture_sha256": "4e33bd20a9c186a62dec6c7fbbee66b3e4331835dd0a842fde561d10c831a773"
+    },
+    {
+      "sample_sha256": "9cbb60b4c8a0c2b5970b3ffe2cec2d03a4a5ceff7a59d6de01dec7cafecc618e",
+      "sample_filename": "02_B社_初回見積.pdf",
+      "fixture_file": "02.raw.json",
+      "fixture_sha256": "812c75d31fbfa455154c12e8c2eafd1d3808f6d0406dd572ec90af405975c9c9"
+    },
+    {
+      "sample_sha256": "b2fdc4622f98064d7115186587407082a0fbc873b59dee8803a5ff51c54bba98",
+      "sample_filename": "03_A社_次回見積.xlsx",
+      "fixture_file": "03.raw.json",
+      "fixture_sha256": "f584c04c3fd4e099efa4689398a35f4ce948c37306cd449b7a1563808d2ca4d4"
+    }
+  ]
+}

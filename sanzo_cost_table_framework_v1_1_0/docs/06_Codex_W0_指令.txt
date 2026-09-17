@@ -1,0 +1,42 @@
+任务：SANZO／No.202608310011 原価単価一覧表系统 W0 接入边界与实施准备。
+依据：实装框架v1.1.0。仅W0，不授权全项目开发、SDK改动或阶段自动推进。
+
+先读取本包README.md、AGENTS.md、docs/01～05、07，核对evidence中的参考测试性质。客户业务范围已经明确，不再问是否需要学习、是否可以先准备费用Master。
+
+当前交付口径：不单设PoC。W3是2个Excel＋1个PDF的商谈Demo，必要时才复用少量实资料；岛野提案结束由森田演示。本指令仍只授权未来W0范围，不代表现在已接入真实SDK或已实现Demo。
+
+一、工作区边界
+1. 使用用户明确指定/当前打开的新业务项目工作区或本框架包的独立目录。不得把本项目建在document-processing-sdk目录或其子目录。
+2. 对新工作区记录绝对路径、是否Git、branch、HEAD、dirty/staged状态；未知不能假定干净。不自动git init/commit/push/切分支/重置/暂存。
+3. 只在用户明确允许的SDK目录内做有限只读核对。如果没有可确定的SDK位置或权限，记SDK_CONTRACT_BLOCKED；不要扫描整台电脑寻找私有仓库。
+4. 不修改SDK源码/依赖/锁文件/Git index，不运行SDK测试，不重新跑100K，不读取原始语料，不向任何已有进程发信号，不import可能产生副作用的SDK。不要安装editable依赖到既有环境。
+5. W0报告/证据写在新业务工作区的独立evidence目录或用户允许的临时目录，不写入SDK仓库。
+
+二、只读调查内容
+读取真实公开文档、pyproject/锁文件、导出入口和少量相关测试源码（不执行），建立SDK_CAPABILITY_MAP.md。每条必须包含确切文件/符号/版本证据，不从个人记忆或本框架的Protocol猜SDK函数名。
+需要确认：
+- PDF文字/页码/坐标/渲染、坐标单位与旋转；不可靠时怎样报告。
+- Excel sheet/cell/raw value/formula/cache/位置及流式资源释放；无缓存计算能力不能假设有。
+- 邮件正文是否由业务层直接处理；不宣称SDK有通用邮件/LLM能力。
+- 显式OCR/云Provider开关和是否可能自动fallback；默认禁止外传。
+- 文件安全/错误类型/资源上限/部分结果的实际契约。
+- SDK固定版本接入方式、与候选Python环境兼容情况。
+
+三、W0产出
+1. SDK_CAPABILITY_MAP.md：已确认/缺少/未能核实分开。
+2. DEPENDENCY_PLAN.md：正式React/TS、Python/FastAPI、PostgreSQL等建议；锁版本留证。此阶段不批量升级/安装。
+3. IMPLEMENTATION_GAPS.md：本文参考核心与正式系统差距；实际SDKAdapter映射候选，不作SDK补丁。
+4. W1_SCOPE.md：只做领域/持久化/事务和测试的允许文件与退出条件，不做UI和真实AI。
+5. START_STATE.json / COMMANDS.log / STATUS.json：真实路径、Git状态、只读命令、退出码、范围差异、未执行项、外部调用0与SDK修改0的依据。
+
+可运行本框架的46项离线参考测试，必须在独立目录且PYTHONDONTWRITEBYTECODE=1；不得把这当作真实SDK、OpenAI或PostgreSQL通过。所有“送货钱”用例均是合成机制测试。
+
+四、停止条件
+发现真实接口与假设不符、权限/路径不明、dirty范围风险、SDK进程受影响风险，即停止扩展调查并报告。不自动修复SDK，不偷偷改范围，不申请收费服务，不将真实报价发给OpenAI/OCR。
+
+五、最终Review Bundle：无论成功、测试失败或启动阻塞均执行
+在能安全保存证据的前提下，制作持久化Review Bundle ZIP、外置.zip.sha256、VERIFICATION.txt。包含本阶段限定报告/patch/基线/允许文件、命令退出码、测试/未执行说明、内部SHA256SUMS。若无代码改动也明确说明。
+排除原始Excel/PDF/邮件、credentials、真实.env、API keys、缓存、venv、整份SDK仓库、100K证据和无关文件。使用允许文件列表；禁止通过宽泛zip整个HOME/Projects来打包。
+做ZIP CRC、内部SHA、成员路径/符号链接安全、外部SHA校验。STATUS必须保留W0_COMPLETE_PRE_REVIEW、W0_TEST_FAILED或W0_START_STATE_BLOCKED等真实状态，打包成功不等于调查/实现成功。
+最后返回：status、HEAD（无仓库则NOT_APPLICABLE）、changed paths、重要差距、未执行项、ZIP绝对路径、.zip.sha256绝对路径、VERIFICATION.txt绝对路径。随后停止，等待ChatGPT独立レビュー。
+若打包自身失败，保留原始证据并报告准确错误和目录，不伪造三个路径；不因失败继续修复/重跑/commit/push。
