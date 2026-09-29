@@ -129,11 +129,14 @@ class SourceExportTests(unittest.TestCase):
             self.assertEqual(detail["P2"].value, "=source.xlsx")
             self.assertEqual(detail["P2"].data_type, "s")
             self.assertEqual(detail["Z2"].value, "AVAILABLE")
-            self.assertEqual(book["未確認事項"]["B3"].value, "AVAILABLE")
+            # AVAILABLE describes document processing; this unconfirmed item
+            # remains in the actual outstanding-review list.
+            self.assertEqual(book["未確認事項"]["B3"].value, "AI_SUGGESTED")
             values = [str(cell.value or "") for sheet in book for cells in sheet for cell in cells]
             self.assertNotIn("SDK_NOT_CONFIGURED", " ".join(values))
             self.assertNotIn("SDK・AI未接続", " ".join(values))
-            self.assertIn("AI 提案・未確認", " ".join(values))
+            self.assertIn("AI仮判定", " ".join(values))
+            self.assertIn("費目未確認", " ".join(values))
         finally:
             book.close()
         self.assertEqual(row, before)

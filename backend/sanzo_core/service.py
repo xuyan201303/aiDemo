@@ -102,10 +102,17 @@ class ReviewService:
             return self._correct_in_transaction(conn, actor, command)
 
     def _correct_in_transaction(self, conn, actor: Principal, command: CorrectionCommand,
-                                *, human_reconfirm: bool = False) -> dict:
-        """Existing correction unit; row-only intent follows aggregate version checks."""
-        if type(human_reconfirm) is not bool:
+                                *, human_reconfirm: bool = False,
+                                shared_key_conflict: bool = False,
+                                single_member_correction: bool = False,
+                                skip_memory_learning: bool = False) -> dict:
+        """Existing correction unit; callers establish their aggregate checks first."""
+        if (type(human_reconfirm) is not bool or type(shared_key_conflict) is not bool
+                or type(single_member_correction) is not bool
+                or type(skip_memory_learning) is not bool):
             raise ValueError("Explicit internal human reconfirm intent required")
+        if shared_key_conflict and not single_member_correction:
+            raise ValueError("Shared-key conflict is reserved for selected-member correction")
         actor.require_editor()
         command.validate()
         digest = request_digest(actor, command)
@@ -147,15 +154,47 @@ class ReviewService:
         price = command.unit_price if command.unit_price is not None else item["current_price"]
         memory_effect = "UNCHANGED_AMOUNT_ONLY"
         memory_action = "UNCHANGED_AMOUNT_ONLY"
+        unresolved_shared_key = False
+        condition_guarded = False
         memory_version = slot["version"] if slot else 0
-        if category_action and key is None:
+        if category_action and skip_memory_learning:
+            # The source's applicability was manually corrected. Its original
+            # reading signature cannot yet be learned as a future rule.
+            memory_effect = "NOT_ELIGIBLE_CONDITION_CORRECTED"
+            memory_action = memory_effect
+        elif category_action and key is None:
             memory_effect = "NOT_ELIGIBLE_CONTEXT_OR_SOURCE"
             memory_action = memory_effect
         elif category_action:
-            effective = slot or self.repository.lookup_memory(conn, observation, item["source_ref"], item["input_kind"])
+            # A direct slot may still be blocked by an append-only correction
+            # of the source condition. The effective read and the write path
+            # must agree before promising that this confirmation is reusable.
+            effective = self.repository.lookup_memory(conn, observation, item["source_ref"], item["input_kind"])
+            condition_guarded = self.repository.condition_correction_guarded(
+                conn, actor.tenant_id, key)
             transition = transition_human_reconfirmation if human_reconfirm else transition_memory
             memory_effect = transition(effective, target, command.replace_existing_mapping)
             memory_action = memory_effect
+            if human_reconfirm and slot and slot["status"] == "CONFLICTED":
+                prior = conn.execute("""SELECT reason FROM sanzo_core.memory_versions
+                    WHERE tenant_id=%s AND memory_key=%s AND version=%s""",
+                    (actor.tenant_id, key, slot["version"])).fetchone()
+                unresolved_shared_key = bool(prior and prior["reason"] in {
+                    "EXPLICIT_SINGLE_MEMBER_SHARED_KEY", "SHARED_KEY_AMBIGUITY_UNRESOLVED",
+                })
+            # A single corrected item may share an indistinguishable learning
+            # signature with a still-confirmed item assigned to another fee.
+            # Save the human decision, but never publish it as an ACTIVE rule.
+            # The condition event remains an independent append-only guard.
+            # When a real shared-key divergence is also present, record that
+            # independent blocker in memory history so current review cannot
+            # mistake the combined state for a future-only learning notice.
+            if (shared_key_conflict or unresolved_shared_key) and memory_effect != "REVOKED":
+                memory_effect = "CONFLICTED"
+                memory_action = "CONFLICTED_SHARED_KEY"
+            elif condition_guarded and memory_effect != "REVOKED":
+                memory_effect = "CONFLICTED"
+                memory_action = "CONFLICTED_CONDITION_CORRECTION_GUARD"
             if memory_effect == "ACTIVE":
                 memory_action = (
                     "ACTIVE_CREATED" if effective is None else
@@ -179,12 +218,18 @@ class ReviewService:
         adopted = self.repository.item(conn, actor.tenant_id, item["item_id"])
         response.update(fee_name=adopted["current_fee_name"], fee_name_version=adopted["current_fee_name_version"])
         self.repository.correction_event(conn, actor, item, response)
-        if category_action and key is not None:
+        if category_action and key is not None and not skip_memory_learning:
             self.repository.write_memory(
                 conn, actor=actor, item=item, observation=observation, key=key,
                 version=memory_version, status=memory_effect, target=target,
                 event_id=str(uuid4()), source_event_id=response["event_id"],
-                reason="EXPLICIT_ROW_HUMAN_RECONFIRM" if human_reconfirm else "EXPLICIT_ITEM_FEE_CONFIRMATION",
+                reason=("HUMAN_CONDITION_CORRECTION_INVALIDATES_ORIGINAL_SIGNATURE"
+                        if memory_action == "CONFLICTED_CONDITION_CORRECTION_GUARD" else
+                        "EXPLICIT_SINGLE_MEMBER_SHARED_KEY" if shared_key_conflict else
+                        "SHARED_KEY_AMBIGUITY_UNRESOLVED" if unresolved_shared_key else
+                        "EXPLICIT_SINGLE_MEMBER_CORRECTION" if single_member_correction else
+                        "EXPLICIT_ROW_HUMAN_RECONFIRM" if human_reconfirm else
+                        "EXPLICIT_ITEM_FEE_CONFIRMATION"),
             )
         self._checkpoint("after_memory")
         self._checkpoint("before_command")

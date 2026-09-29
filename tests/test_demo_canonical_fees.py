@@ -433,7 +433,8 @@ class CanonicalPostgresTests(TestCase):
             result = self.run_document(second)
         self.assertEqual((result['state'], result['error_code']), ('FAILED', 'AI_CANONICAL_CANDIDATE_NO_LONGER_ACTIVE'))
         self.assertEqual(self.rows(second), [])
-        self.assertEqual(self.rows(first)[0]['current_fee_name'], 'Newest server canonical name')
+        self.assertEqual(self.rows(first)[0]['current_fee_name'], 'Stored canonical name')
+        self.assertEqual(self.rows(first)[0]['effective_fee_name'], 'Newest server canonical name')
         self.assertEqual(self.rows(first)[0]['current_fee_id'], saved['fee_id'])
         self.assertEqual(self.counts(), before)
 

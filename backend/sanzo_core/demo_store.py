@@ -226,6 +226,23 @@ class DemoStore:
         observation = Observation.from_json(item["observation"])
         actor.require_case(item["case_id"])
         item["observation"] = json.loads(item["observation"])
+        # Human applicability changes are an overlay over immutable extraction
+        # evidence. Keep the REAL line-evidence gate before applying an explicit
+        # correction; an unrelated unverified SDK field must not become known.
+        from .fee_policy import uses_fee_policy, line_conditions
+        context = dict(item["observation"].get("context") or {})
+        effective = (line_conditions(context, item["source_ref"])
+                     if uses_fee_policy(item["source_ref"], item["input_kind"])
+                     else context.copy())
+        overrides = self.repository.condition_overlays(conn, actor.tenant_id, item_id)
+        for field, correction in overrides.items():
+            effective[field] = correction["human_confirmed_value"]
+        item["effective_context"] = effective
+        item["condition_overrides"] = overrides
+        item["future_reuse_eligible"] = not bool(overrides)
+        item["condition_review_reason"] = (
+            "CONDITION_CORRECTED_FUTURE_REUSE_UNVERIFIED" if overrides else None
+        )
         row = conn.execute("""
             SELECT decision_json FROM sanzo_core.item_classifications
             WHERE tenant_id=%s AND item_id=%s
@@ -236,16 +253,35 @@ class DemoStore:
         direct = self.repository.slot(conn, actor.tenant_id, memory_key(observation, item["source_ref"], item["input_kind"]))
         item["current_memory_version"] = direct["version"] if direct else 0
         item["memory_resolution"] = {"kind": slot.get("resolution", "DIRECT"), "version": slot["version"],
-            "evidence_versions": slot.get("evidence_versions", [])} if slot else None
+            "evidence_versions": slot.get("evidence_versions", []),
+            "guarded_direct_status": slot.get("guarded_direct_status"),
+            "guarded_independent_conflict": slot.get("guarded_independent_conflict"),
+            "guarded_independent_revocation": slot.get("guarded_independent_revocation")} if slot else None
         item["current_memory_status"] = slot["status"] if slot else None
         item["current_memory_origin"] = slot["origin"] if slot else None
-        confirmed = conn.execute("""
-            SELECT 1 FROM sanzo_core.correction_events
+        # A classification adopted before an applicability correction is an
+        # audit fact, but it does not confirm the fee for the corrected
+        # condition. Both histories carry the item's monotonic version, so the
+        # read projection can establish the order without rewriting either.
+        confirmation = conn.execute("""
+            SELECT max(item_version) AS item_version
+            FROM sanzo_core.correction_events
             WHERE tenant_id=%s AND item_id=%s
-                AND response_json->>'memory_effect' <> 'UNCHANGED_AMOUNT_ONLY' LIMIT 1
-        """, (actor.tenant_id, item_id)).fetchone()
+              AND response_json->>'memory_effect' <> 'UNCHANGED_AMOUNT_ONLY'
+        """, (actor.tenant_id, item_id)).fetchone()["item_version"]
+        condition_version = None
+        if overrides:
+            condition_version = conn.execute("""
+                SELECT max(item_version) AS item_version
+                FROM sanzo_core.condition_correction_events
+                WHERE tenant_id=%s AND item_id=%s
+            """, (actor.tenant_id, item_id)).fetchone()["item_version"]
+        item["classification_confirmed_after_condition"] = bool(
+            confirmation is not None and
+            (condition_version is None or confirmation > condition_version)
+        )
         item["saved_status"] = (
-            "HUMAN_CONFIRMED" if confirmed else
+            "HUMAN_CONFIRMED" if confirmation is not None else
             row["decision_json"]["kind"] if row else "UNCLASSIFIED"
         )
         # Derived provenance for the new deterministic import only. Older saved
@@ -253,7 +289,7 @@ class DemoStore:
         if item["source_ref"].get("fact_materialization"):
             item["fact_sources"] = dict(item["source_ref"]["fact_sources"])
             item["classification_source"] = (
-                "HUMAN" if confirmed else "MEMORY" if item["saved_status"] == "MEMORY_APPLIED"
+                "HUMAN" if confirmation is not None else "MEMORY" if item["saved_status"] == "MEMORY_APPLIED"
                 else "AI" if item.get("ai_suggested_name") else "UNRESOLVED")
         return item
 

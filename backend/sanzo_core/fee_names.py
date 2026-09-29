@@ -46,25 +46,30 @@ def rename_row(owner, conn, actor, command, items, digest):
     slots = {}
     for iid, item in items.items():
         slot = r.lookup_memory(conn, Observation.from_json(item["observation"]), item["source_ref"], item["input_kind"])
-        if slot and (slot['status'] != 'ACTIVE' or slot['fee_id'] != target):
-            raise ConflictError("対応関係の再確認が必要です。名称変更では復元できません")
+        # A memory conflict limits future automatic classification, not the
+        # explicitly selected, already confirmed fee identity. Renaming the
+        # catalog must neither repair nor reactivate that memory.
         slots[iid] = slot
     named = append_name(r, conn, actor, target, command.expected_name_version, command.new_fee_name, command.case_id)
     owner.service._checkpoint("after_name")
     owner.service._checkpoint("after_fee_rename")
+    # A rename changes the current catalog label for this stable fee identity.
+    # Previously adopted item names and versions are historical facts, including
+    # the members selected to open this action. The name-version event above is
+    # the audit record; do not manufacture per-item correction events here.
+    revision = r.advance_case(conn, actor.tenant_id, command.case_id)
     results = []
-    revision = command.expected_case_revision
     for iid in sorted(items):
         item, slot = items[iid], slots[iid]
-        version = r.update_item(conn, actor.tenant_id, iid, target, item['current_price'], refresh_name=True)
-        revision = r.advance_case(conn, actor.tenant_id, command.case_id)
-        owner.service._checkpoint("after_item")
-        result = {**named, 'item_id': iid, 'item_version': version, 'case_revision': revision,
-                  'unit_price': item['current_price'], 'event_id': str(uuid4()),
-                  'memory_effect': 'ACTIVE' if slot else 'NOT_ELIGIBLE_CONTEXT_OR_SOURCE',
-                  'memory_action': 'UNCHANGED_FEE_RENAMED', 'memory_version': slot['version'] if slot else 0}
-        r.correction_event(conn, actor, item, result)
-        results.append(result)
+        reusable = bool(slot and slot['status'] == 'ACTIVE' and slot['fee_id'] == target)
+        results.append({
+            'item_id': iid, 'item_version': item['version'], 'case_revision': revision,
+            'memory_effect': ('ACTIVE' if reusable else
+                              'NOT_REUSABLE_MAPPING' if slot and slot['status'] == 'ACTIVE' else
+                              slot['status'] if slot else 'NOT_ELIGIBLE_CONTEXT_OR_SOURCE'),
+            'memory_action': 'UNCHANGED_FEE_RENAMED',
+            'memory_version': slot['version'] if slot else 0,
+        })
     owner.service._checkpoint("before_command")
     response = {**named, 'kind': 'ROW_FEE_RENAME', 'intent': 'RENAME_FEE', 'row_id': command.row_id,
                 'case_id': command.case_id, 'case_revision': revision, 'confirmation_status': '✓ 確認済み',

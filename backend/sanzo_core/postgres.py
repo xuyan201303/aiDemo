@@ -135,6 +135,25 @@ class PostgresRepository:
         return row
 
     @staticmethod
+    def condition_overlays(conn, tenant_id: str, item_id: str) -> dict[str, dict]:
+        rows = conn.execute("""
+            SELECT o.field_name,o.original_value,o.human_confirmed_value,o.event_id,
+                   e.actor_id,e.created_at
+            FROM sanzo_core.item_condition_overlays o
+            JOIN sanzo_core.condition_correction_events e
+              ON e.tenant_id=o.tenant_id AND e.event_id=o.event_id
+            WHERE o.tenant_id=%s AND o.item_id=%s
+        """, (tenant_id, item_id)).fetchall()
+        return {row["field_name"]: {
+            "original_value": row["original_value"],
+            "human_confirmed_value": row["human_confirmed_value"],
+            "effective_value": row["human_confirmed_value"],
+            "actor_id": row["actor_id"],
+            "confirmed_at": row["created_at"].isoformat(),
+            "event_id": row["event_id"],
+        } for row in rows}
+
+    @staticmethod
     def advance_case(conn, tenant_id: str, case_id: str) -> int:
         return conn.execute("""
             UPDATE sanzo_core.cases SET case_revision=case_revision+1,
@@ -167,12 +186,62 @@ class PostgresRepository:
             FROM sanzo_core.memory_slots WHERE tenant_id=%s AND memory_key=%s
         """, (tenant_id, key)).fetchone()
 
+    @staticmethod
+    def condition_correction_guarded(conn, tenant_id: str, key: str | None) -> bool:
+        """An unresolved correction of this original signature forbids reuse.
+
+        The append-only event guards even a key with no memory slot yet. A
+        later fee-name confirmation alone cannot resolve the source condition.
+        """
+        if key is None:
+            return False
+        return conn.execute("""
+            SELECT 1 FROM sanzo_core.condition_correction_events
+            WHERE tenant_id=%s AND original_memory_key=%s
+              AND original_value IS DISTINCT FROM human_confirmed_value
+            LIMIT 1
+        """, (tenant_id, key)).fetchone() is not None
+
     def lookup_memory(self, conn, observation, source_ref, input_kind):
         """Read-only compatibility; new policy wins, legacy never gets rewritten."""
         from .domain import Observation
         from .fee_policy import uses_fee_policy, signature, PREFIX
         key = memory_key(observation, source_ref, input_kind)
         current = self.slot(conn, observation.tenant_id, key)
+        if key is not None:
+            # A later ordinary fee confirmation may write another ACTIVE
+            # version, but it cannot prove that the original misread condition
+            # has become safe for automatic reuse. The append-only condition
+            # event therefore remains an exact-key read guard.
+            if self.condition_correction_guarded(conn, observation.tenant_id, key):
+                independent_conflict = False
+                independent_revocation = bool(current and current["status"] == "REVOKED")
+                if current and current["status"] in {"CONFLICTED", "REVOKED"}:
+                    # A condition guard may coexist with an older, independent
+                    # shared-key conflict or revocation. Later guard-only
+                    # versions must not erase either from current review. An
+                    # intervening ACTIVE version is the resolution boundary.
+                    blockers = conn.execute("""
+                        SELECT COALESCE(bool_or(v.status='CONFLICTED' AND
+                            v.reason <> 'HUMAN_CONDITION_CORRECTION_INVALIDATES_ORIGINAL_SIGNATURE'), false)
+                            AS independent_conflict,
+                          COALESCE(bool_or(v.status='REVOKED'), false) AS independent_revocation
+                        FROM sanzo_core.memory_versions v
+                        WHERE v.tenant_id=%s AND v.memory_key=%s
+                          AND v.version > COALESCE((
+                              SELECT max(a.version) FROM sanzo_core.memory_versions a
+                              WHERE a.tenant_id=v.tenant_id AND a.memory_key=v.memory_key
+                                AND a.status='ACTIVE'
+                          ), 0)
+                    """, (observation.tenant_id, key)).fetchone()
+                    independent_conflict = blockers["independent_conflict"]
+                    independent_revocation = blockers["independent_revocation"]
+                return ({**current, "status": "CONFLICTED", "fee_id": None,
+                         "resolution": "CONDITION_CORRECTION_GUARD",
+                         "guarded_direct_status": current["status"],
+                         "guarded_independent_conflict": independent_conflict,
+                         "guarded_independent_revocation": independent_revocation}
+                        if current else None)
         if current is not None or key is None or not uses_fee_policy(source_ref, input_kind):
             return current
         wanted = signature(observation, source_ref, input_kind)
@@ -222,8 +291,38 @@ class PostgresRepository:
             LEFT JOIN sanzo_core.correction_events c ON c.tenant_id=e.tenant_id
                 AND c.event_id=e.source_event_id
             WHERE s.tenant_id=%s AND s.origin='REAL_SDK' AND (f.retired IS NULL OR NOT f.retired)
+              AND NOT EXISTS (
+                  SELECT 1 FROM sanzo_core.condition_correction_events x
+                  WHERE x.tenant_id=s.tenant_id AND x.original_memory_key=s.memory_key
+                    AND x.original_value IS DISTINCT FROM x.human_confirmed_value)
             ORDER BY s.memory_key LIMIT %s
         """, (tenant_id, MAX_CURRENT_SLOTS + 1)).fetchall()
+        if len(rows) > MAX_CURRENT_SLOTS:
+            # A truncated scan could hide a conflicting sibling; keep the
+            # original candidate bound even when guarded rows are filtered.
+            return []
+        # Legacy REAL slots are keyed under an older policy. Their current
+        # projected fee-name signature may still equal a guarded original key,
+        # so exclude those from the cross-case vocabulary as well.
+        from .domain import Observation
+        from .fee_policy import key as fee_name_key
+        projected = {}
+        for row in rows:
+            try:
+                projected[row["memory_key"]] = fee_name_key(
+                    Observation.from_json(canonical_json(row["observation"])),
+                    row["source_ref"], row["input_kind"])
+            except (KeyError, TypeError, ValueError):
+                continue
+        keys = sorted({key for key in projected.values() if key})
+        if keys:
+            guarded = conn.execute("""
+                SELECT DISTINCT original_memory_key FROM sanzo_core.condition_correction_events
+                WHERE tenant_id=%s AND original_memory_key=ANY(%s)
+                  AND original_value IS DISTINCT FROM human_confirmed_value
+            """, (tenant_id, keys)).fetchall()
+            blocked = {row["original_memory_key"] for row in guarded}
+            rows = [row for row in rows if projected.get(row["memory_key"]) not in blocked]
         return canonical_candidates(rows, tenant_id, authorized_hashes)
 
     @staticmethod

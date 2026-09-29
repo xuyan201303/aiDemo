@@ -125,6 +125,7 @@ class RowConfirmationService:
             ids = conn.execute("SELECT item_id FROM sanzo_core.items WHERE tenant_id=%s AND case_id=%s ORDER BY item_id",
                                (actor.tenant_id, command.case_id)).fetchall()
             items = [self.store._item(conn, actor, row["item_id"]) for row in ids]
+            current_items = {item["item_id"]: item for item in items}
             fees = conn.execute("SELECT fee_id,display_name,name_version FROM sanzo_core.fees WHERE tenant_id=%s", (actor.tenant_id,)).fetchall()
             documents = conn.execute("SELECT document_id,original_filename FROM sanzo_core.documents WHERE tenant_id=%s AND case_id=%s", (actor.tenant_id, command.case_id)).fetchall()
             row = next((row for row in comparison_projection(items, fees, documents)["rows"] if row["row_id"] == command.row_id), None)
@@ -184,7 +185,8 @@ class RowConfirmationService:
                 key = keys[m.item_id]
                 result = self.service._correct_in_transaction(conn, actor, command.item_command(
                     m, revision, child_keys[m.item_id], target=target,
-                    memory_version=memory_versions.get(key, 0)), human_reconfirm=True)
+                    memory_version=memory_versions.get(key, 0)), human_reconfirm=True,
+                    skip_memory_learning=bool(current_items[m.item_id].get("condition_overrides")))
                 target, revision = result["fee_id"], result["case_revision"]
                 if key is not None:
                     memory_versions[key] = result["memory_version"]
@@ -193,5 +195,147 @@ class RowConfirmationService:
                 "case_id": command.case_id, "case_revision": revision, "fee_id": target,
                 "confirmation_status": "✓ 確認済み", "members": results,
                 "memory_reusable": all(member["memory_effect"] == "ACTIVE" for member in results)}
+            r.save_command(conn, actor, command, "CORRECT", digest, command.case_id, response)
+            return response
+
+
+@dataclass(frozen=True)
+class SingleMemberCorrectionCommand:
+    """Correct one member without authorizing a change to its row siblings."""
+
+    case_id: str
+    row_id: str
+    item_id: str
+    expected_case_revision: int
+    expected_item_version: int
+    expected_memory_version: int
+    idempotency_key: str
+    target_fee_id: str | None = None
+    new_fee_name: str | None = None
+    expected_fee_id: str | None = None
+    expected_name_version: int | None = None
+    expected_memory_evidence: list[dict] | None = None
+    replace_existing_mapping: bool = False
+
+    def validate(self):
+        self.as_row_command().validate()
+
+    def as_row_command(self):
+        member = RowMember(self.item_id, self.expected_item_version,
+                           self.expected_memory_version, self.expected_memory_evidence)
+        return RowConfirmationCommand(self.case_id, self.row_id,
+            self.expected_case_revision, (member,), self.idempotency_key,
+            target_fee_id=self.target_fee_id, new_fee_name=self.new_fee_name,
+            replace_existing_mapping=self.replace_existing_mapping,
+            intent="RECLASSIFY_MEMBERS", expected_fee_id=self.expected_fee_id,
+            expected_name_version=self.expected_name_version)
+
+
+class SingleMemberCorrectionService:
+    """Typed selected-member transaction, separate from whole-row confirmation."""
+
+    def __init__(self, repository, fault_hook=None):
+        self.repository = repository
+        self.service = ReviewService(repository, fault_hook=fault_hook)
+        self.store = DemoStore(repository)
+
+    def _other_confirmed_identity_uses_key(self, conn, actor, item_id, key, target):
+        # The signature is derived from immutable source evidence, not from a
+        # name, company, or the already assigned fee. The memory advisory lock
+        # serializes competing corrections/ingestion of this same signature.
+        different_target = " AND current_fee_id<>%s" if target is not None else ""
+        params = (actor.tenant_id, item_id, target) if target is not None else (actor.tenant_id, item_id)
+        rows = conn.execute("""SELECT item_id,observation,source_ref,input_kind,current_fee_id
+            FROM sanzo_core.items WHERE tenant_id=%s AND item_id<>%s
+              AND current_fee_id IS NOT NULL""" + different_target, params).fetchall()
+        for row in rows:
+            observation = Observation.from_json(canonical_json(row["observation"]))
+            if memory_key(observation, row["source_ref"], row["input_kind"]) == key:
+                return True
+        return False
+
+    def correct(self, actor, command: SingleMemberCorrectionCommand):
+        actor.require_case(command.case_id)
+        command.validate()
+        digest = request_digest(actor, command)
+        r = self.repository
+        with r.transaction() as conn:
+            replay = self.service._replay(conn, actor, command, digest, "CORRECT")
+            if replay is not None:
+                return replay
+            child_key = "single-member:" + sha256(canonical_json([
+                actor.tenant_id, command.idempotency_key, command.item_id]).encode()).hexdigest()
+            r.advisory(conn, "idempotency", actor.tenant_id, child_key)
+            case = r.case(conn, actor.tenant_id, command.case_id, lock=True)
+            r.lock_fee_catalog(conn, actor.tenant_id)
+            if case["case_revision"] != command.expected_case_revision:
+                raise ConflictError("案件が更新されています。入力を保持して最新を読み直してください")
+            if command.target_fee_id is not None:
+                if command.expected_fee_id is None or command.expected_name_version is None:
+                    raise ValueError("選択した統一費目の最新の名称を確認してから保存してください")
+                selected_fee = r.fee(conn, actor.tenant_id, command.target_fee_id)
+                if selected_fee is None:
+                    raise ScopeError("Fee not available in authorized scope")
+                if selected_fee["name_version"] != command.expected_name_version:
+                    raise ConflictError("統一費目の名称が更新されています。入力を保持して最新の名称を確認してください")
+            ids = conn.execute("""SELECT item_id FROM sanzo_core.items
+                WHERE tenant_id=%s AND case_id=%s ORDER BY item_id""",
+                (actor.tenant_id, command.case_id)).fetchall()
+            items = [self.store._item(conn, actor, row["item_id"]) for row in ids]
+            current_items = {item["item_id"]: item for item in items}
+            fees = conn.execute("""SELECT fee_id,display_name,name_version FROM sanzo_core.fees
+                WHERE tenant_id=%s""", (actor.tenant_id,)).fetchall()
+            documents = conn.execute("""SELECT document_id,original_filename FROM sanzo_core.documents
+                WHERE tenant_id=%s AND case_id=%s""", (actor.tenant_id, command.case_id)).fetchall()
+            row = next((row for row in comparison_projection(items, fees, documents)["rows"]
+                        if row["row_id"] == command.row_id), None)
+            if row is None or command.item_id not in row["item_ids"]:
+                raise ConflictError("比較行の構成が変わりました。明細を再確認してください")
+            item = r.item(conn, actor.tenant_id, command.item_id, lock=True)
+            if item["case_id"] != command.case_id:
+                raise ScopeError("Item not available in authorized scope")
+            if item["version"] != command.expected_item_version:
+                raise ConflictError("明細が更新されています。最新を読み直してください")
+            if command.target_fee_id is not None and item["current_fee_id"] == command.target_fee_id:
+                raise ValueError("同じ費目の確認は通常の行確認から行ってください")
+            observation = Observation.from_json(item["observation"])
+            key = memory_key(observation, item["source_ref"], item["input_kind"])
+            if key is not None:
+                r.advisory(conn, "memory", actor.tenant_id, key)
+            effective = r.lookup_memory(conn, observation, item["source_ref"], item["input_kind"])
+            if effective and effective.get("resolution") == "LEGACY_PROJECTION":
+                for old_key in sorted(e["memory_key"] for e in effective["evidence_versions"]):
+                    r.advisory(conn, "memory", actor.tenant_id, old_key)
+                effective = r.lookup_memory(conn, observation, item["source_ref"], item["input_kind"])
+            slot = r.slot(conn, actor.tenant_id, key)
+            version = slot["version"] if slot else 0
+            if version != command.expected_memory_version:
+                raise ConflictError("確認記録が更新されています。最新を読み直してください")
+            expected = command.expected_memory_evidence
+            if effective and effective.get("resolution") == "LEGACY_PROJECTION":
+                if expected is None or canonical_json(effective["evidence_versions"]) != canonical_json(expected):
+                    raise ConflictError("確認記録が更新されています。最新を読み直してください")
+            elif expected is not None:
+                raise ConflictError("確認記録が更新されています。最新を読み直してください")
+            if command.new_fee_name is not None:
+                r.advisory(conn, "display_name", actor.tenant_id, normalize_label(command.new_fee_name))
+            # Creating a fee necessarily differs from all existing assignments.
+            shared_key_conflict = key is not None and self._other_confirmed_identity_uses_key(
+                conn, actor, command.item_id, key, command.target_fee_id)
+            member = RowMember(command.item_id, command.expected_item_version,
+                               command.expected_memory_version, command.expected_memory_evidence)
+            result = self.service._correct_in_transaction(conn, actor,
+                command.as_row_command().item_command(member,
+                    command.expected_case_revision, child_key,
+                    memory_version=version), human_reconfirm=True,
+                shared_key_conflict=shared_key_conflict,
+                single_member_correction=True,
+                skip_memory_learning=bool(current_items[command.item_id].get("condition_overrides")))
+            response = {"kind": "SINGLE_MEMBER_CORRECTION", "case_id": command.case_id,
+                "row_id": command.row_id, "item_id": command.item_id,
+                "case_revision": result["case_revision"], "fee_id": result["fee_id"],
+                "member": result, "members": [result],
+                "memory_reusable": result["memory_effect"] == "ACTIVE",
+                "review_required": result["memory_effect"] != "ACTIVE"}
             r.save_command(conn, actor, command, "CORRECT", digest, command.case_id, response)
             return response

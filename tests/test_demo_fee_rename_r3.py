@@ -245,13 +245,19 @@ class FeeRenamePostgresR3Tests(unittest.TestCase):
     def test_R3_01_A_only_rename_B_later_uses_same_identity_new_name(self):
         self.new_case("editing")
         a = self.import_line("editing", "A", "DOC FEE", "8500")
+        adopted_a = deepcopy(self.current(a))
         before_b = deepcopy(self.slot(self.history_b))
         result = self.rename("editing")
         self.assertEqual(result["fee_id"], self.fee_id)
         self.assertEqual(self.slot(self.history_b), before_b, "Rename must not rewrite absent raw alias memory")
         b = self.import_line("editing", "B", "DOCUMENTATION FEE", "7500.00")
         self.assert_new_import(b, "7500.00")
-        self.assertEqual(self.current(a)["current_fee_name"], NEW_NAME)
+        self.assertEqual((self.current(a)["current_fee_name"], self.current(a)["current_fee_name_version"]),
+                         (OLD_NAME, 1))
+        self.assertEqual(self.current(a)["effective_fee_name"], NEW_NAME)
+        for field in ("version", "current_fee_name", "current_fee_name_version",
+                      "observation", "source_ref", "raw_value", "current_price", "currency"):
+            self.assertEqual(self.current(a)[field], adopted_a[field], field)
         self.assertEqual(len(self.projection("editing")["rows"]), 1)
         self.assert_old_case_preserved()
 
@@ -298,12 +304,19 @@ class FeeRenamePostgresR3Tests(unittest.TestCase):
         self.new_case("editing")
         a = self.import_line("editing", "A", "DOC FEE", "8000")
         b = self.import_line("editing", "B", "DOCUMENTATION FEE", "7500.00")
+        adopted = {i["item_id"]: deepcopy(self.current(i)) for i in (a, b)}
         original_slots = [deepcopy(self.slot(item)) for item in (a, b)]
         result = self.rename("editing")
         self.assertEqual(result["fee_id"], self.fee_id)
         self.assertEqual([self.slot(item) for item in (a, b)], original_slots)
         self.assertEqual(len(self.name_versions()), 2)
-        self.assertEqual({i["current_fee_name"] for i in self.snapshot("editing")["items"]}, {NEW_NAME})
+        self.assertEqual({i["current_fee_name"] for i in self.snapshot("editing")["items"]}, {OLD_NAME})
+        self.assertEqual({i["effective_fee_name"] for i in self.snapshot("editing")["items"]}, {NEW_NAME})
+        for item in self.snapshot("editing")["items"]:
+            old = adopted[item["item_id"]]
+            for field in ("version", "current_fee_name", "current_fee_name_version",
+                          "observation", "source_ref", "raw_value", "current_price", "currency"):
+                self.assertEqual(item[field], old[field], field)
         self.assert_old_case_preserved()
 
     def test_R3_06_reclassify_A_only_does_not_rename_or_reassign_B(self):

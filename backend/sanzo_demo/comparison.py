@@ -2,14 +2,17 @@
 from collections import defaultdict
 import re
 from hashlib import sha256
-from sanzo_core.domain import Observation, canonical_json, memory_key
+from sanzo_core.domain import canonical_json
 from .extraction import CONDITIONS, applicable_value
+from .review_state import learning_eligible as shared_learning_eligible, review_facts
 
 def _known(value):
     value = applicable_value(value)
     return value.strip() if isinstance(value, str) and value.strip() else None
 
 def _context(item):
+    if isinstance(item.get("effective_context"), dict):
+        return item["effective_context"]
     context = item.get("observation", {}).get("context", {})
     from sanzo_core.fee_policy import uses_fee_policy, line_conditions
     if uses_fee_policy(item.get("source_ref"), item.get("input_kind")):
@@ -133,10 +136,13 @@ def comparison_groups(items, fees=()):
 
 def comparison_status(item, ambiguous=False):
     status = item.get("saved_status") or (item.get("initial_classification") or {}).get("kind")
-    if ambiguous or status in {"CONFLICTED", "REVOKED"} or item.get("current_memory_status") in {"CONFLICTED", "REVOKED"}:
+    facts = review_facts(item)
+    if ambiguous or facts["review_required"] and item.get("current_fee_id"):
         return "⚠ 確認必要"
-    if item.get("current_fee_id"):
+    if facts["classification_confirmed"]:
         return "✓ 確認済み"
+    if status in {"CONFLICTED", "REVOKED"} or item.get("current_memory_status") in {"CONFLICTED", "REVOKED"}:
+        return "⚠ 確認必要"
     if item.get("ai_suggested_name") and (item.get("observation", {}).get("source_ready") is True or learning_eligible(item)):
         return "● AI仮判定"
     return "⚠ 確認必要"
@@ -145,19 +151,21 @@ def row_identity(item_ids):
     return sha256(canonical_json(sorted(item_ids)).encode()).hexdigest()
 
 def learning_eligible(item):
-    try:
-        obs = Observation.from_json(canonical_json(item["observation"]))
-        return memory_key(obs, item.get("source_ref"), item.get("input_kind")) is not None
-    except (KeyError, TypeError, ValueError):
-        return False
+    # Preserve the public helper while sharing one rule with XLSX export.
+    return shared_learning_eligible(item)
 
 def row_confirmation_status(group):
-    # A confirmed row name is distinct from each member's reusable memory.
+    # The row is complete only when every member is complete for this quote.
+    # A future learning notice alone is not a current review blocker.
     if group["ambiguous"]:
         return "⚠ 確認必要"
-    if all(i.get("current_fee_id") for i in group["items"]):
+    facts = [review_facts(item) for item in group["items"]]
+    statuses = [comparison_status(item) for item in group["items"]]
+    if any(status == "⚠ 確認必要" for status in statuses):
+        return "⚠ 確認必要"
+    if all(fact["classification_confirmed"] for fact in facts):
         return "✓ 確認済み"
-    if all(comparison_status(i) in {"✓ 確認済み", "● AI仮判定"} for i in group["items"]):
+    if all(status in {"✓ 確認済み", "● AI仮判定"} for status in statuses):
         return "● AI仮判定"
     return "⚠ 確認必要"
 
@@ -177,7 +185,6 @@ def comparison_projection(items, fees=(), documents=()):
         current_fee = fee_catalog.get(representative.get("current_fee_id"), {})
         rename_allowed = (bool(representative.get("current_fee_id")) and not group["ambiguous"]
             and all(i.get("current_fee_id") == representative["current_fee_id"]
-                    and i.get("current_memory_status") not in {"CONFLICTED", "REVOKED"}
                     for i in group["items"]))
         label = "費目未確認" if group["ambiguous"] else current_fee.get("name") or representative.get("ai_suggested_name") or "費目未確認"
         rows.append({"row_id": row_identity([i["item_id"] for i in group["items"]]),
@@ -185,14 +192,16 @@ def comparison_projection(items, fees=(), documents=()):
             "rename_allowed": rename_allowed,
             "rename_fee_id": representative.get("current_fee_id") if rename_allowed else None,
             "rename_name_version": current_fee.get("version") if rename_allowed else None,
-            "member_items": [{**i, "forwarder": _company(i), "learning_eligible": learning_eligible(i)} for i in group["items"]],
+            "member_items": [{**i, "forwarder": _company(i), "learning_eligible": learning_eligible(i),
+                              "review_facts": review_facts(i)} for i in group["items"]],
             "label": label, "equipment": group["conditions"][1],
             "ambiguous": group["ambiguous"], "item_ids": [i["item_id"] for i in group["items"]],
             "fee_identity": representative.get("current_fee_id"),
             "cells": {company: [{"item_id": i["item_id"], "price": i["current_price"], "currency": i["currency"],
                 "status": comparison_status(i, group["ambiguous"]),
                 "confirmation_origin": i.get("saved_status"),
-                "needs_review": _context(i).get("ready") is not True or any(_known(_context(i).get(k)) is None for k in CONDITIONS) or i.get("observation", {}).get("source_ready") is not True or group["ambiguous"],
+                "needs_review": review_facts(i)["review_required"] or group["ambiguous"],
+                "review_facts": review_facts(i),
                 "raw_label": i.get("observation", {}).get("raw_label"),
                 "ai_suggested_name": i.get("ai_suggested_name"), "source_ref": i.get("source_ref")}
                 for i in group["items"] if _company(i) == company] for company in companies}})

@@ -26,9 +26,10 @@ from sanzo_core.domain import ConflictError, CorrectionCommand, Principal, Revok
 from sanzo_core.postgres import PostgresRepository
 from sanzo_core.service import ReviewService
 from .files import MAX_UPLOAD, excel_preview, original_path, validate_original
-from .export import workbook_bytes
+from .export import export_review_state, workbook_bytes
 from .comparison import comparison_projection
-from .row_confirmation import RowConfirmationService, RowConfirmationCommand, RowMember
+from .row_confirmation import (RowConfirmationService, RowConfirmationCommand, RowMember,
+    SingleMemberCorrectionService, SingleMemberCorrectionCommand)
 from .pdf_preview import pdf_html, pdf_page_png
 from .ingestion import IntegrationRuntime
 
@@ -78,6 +79,29 @@ class RowConfirmationBody(DTO):
     target_fee_id: str | None = Field(default=None, min_length=1, max_length=200)
     new_fee_name: str | None = Field(default=None, min_length=1, max_length=1024)
     replace_existing_mapping: StrictBool = False
+
+
+class SingleMemberCorrectionBody(DTO):
+    expected_case_revision: StrictInt = Field(ge=1)
+    expected_item_version: StrictInt = Field(ge=1)
+    expected_memory_version: StrictInt = Field(ge=0)
+    expected_memory_evidence: list[MemoryEvidenceBody] | None = Field(default=None, max_length=1000)
+    idempotency_key: str = Field(min_length=1, max_length=200)
+    target_fee_id: str | None = Field(default=None, min_length=1, max_length=200)
+    new_fee_name: str | None = Field(default=None, min_length=1, max_length=1024)
+    expected_fee_id: str | None = Field(default=None, min_length=1, max_length=200)
+    expected_name_version: StrictInt | None = Field(default=None, ge=1)
+    replace_existing_mapping: StrictBool = False
+
+
+class ConditionCorrectionBody(DTO):
+    expected_case_revision: StrictInt = Field(ge=1)
+    expected_item_version: StrictInt = Field(ge=1)
+    expected_memory_version: StrictInt = Field(ge=0)
+    expected_memory_evidence: list[MemoryEvidenceBody] | None = Field(default=None, max_length=1000)
+    idempotency_key: str = Field(min_length=1, max_length=200)
+    field: Literal["equipment", "billing_unit"]
+    value: str | None = Field(..., max_length=1024)
 
 
 class ProcessBody(DTO):
@@ -175,7 +199,8 @@ def create_app(dsn: str, storage_dir: str | Path, *, tenant_id: str = "local-dem
 
     @app.get("/api/cases")
     def cases():
-        return store.list_cases(actor)
+        from .case_overview import case_summaries
+        return case_summaries(actor, store, pipeline)
 
     @app.post("/api/cases", status_code=201)
     def new_case(body: CaseBody):
@@ -185,10 +210,17 @@ def create_app(dsn: str, storage_dir: str | Path, *, tenant_id: str = "local-dem
     def case_detail(case_id: str):
         snapshot = pipeline.store.case_snapshot(actor, case_id)
         snapshot["reader_mode"] = pipeline.reader_mode
+        snapshot["export_draft"] = export_review_state(
+            snapshot["items"], snapshot["documents"], snapshot.get("tasks", []))[0]
         snapshot["comparison"] = comparison_projection(snapshot["items"], snapshot.get("fees", []), snapshot["documents"])
         snapshot["documents"] = [public_document(d) for d in snapshot["documents"]]
         snapshot["tasks"] = [public_task(t) for t in snapshot["tasks"]]
         return snapshot
+
+    @app.get("/api/cases/{case_id}/fees/{fee_id}/rename-impact")
+    def fee_rename_impact(case_id: str, fee_id: str):
+        from .rename_impact import rename_impact
+        return rename_impact(repository, actor, case_id, fee_id)
 
     @app.post("/api/cases/{case_id}/documents", status_code=201)
     async def upload(case_id: str, file: UploadFile = File(...)):
@@ -288,6 +320,17 @@ def create_app(dsn: str, storage_dir: str | Path, *, tenant_id: str = "local-dem
         return RowConfirmationService(repository).confirm(actor, RowConfirmationCommand(
             case_id=case_id, row_id=row_id, **values))
 
+    @app.post("/api/cases/{case_id}/comparison/{row_id}/members/{item_id}/correction")
+    def correct_member(case_id: str, row_id: str, item_id: str, body: SingleMemberCorrectionBody):
+        return SingleMemberCorrectionService(repository).correct(actor, SingleMemberCorrectionCommand(
+            case_id=case_id, row_id=row_id, item_id=item_id, **body.model_dump()))
+
+    @app.post("/api/cases/{case_id}/comparison/{row_id}/members/{item_id}/conditions")
+    def correct_conditions(case_id: str, row_id: str, item_id: str, body: ConditionCorrectionBody):
+        from sanzo_core.condition_corrections import ConditionCorrectionService, ConditionCorrectionCommand
+        return ConditionCorrectionService(repository).correct(actor, ConditionCorrectionCommand(
+            case_id=case_id, row_id=row_id, item_id=item_id, **body.model_dump()))
+
     @app.post("/api/items/{item_id}/corrections")
     def correct(item_id: str, body: CorrectionBody):
         return service.correct(actor, CorrectionCommand(item_id=item_id, **body.model_dump()))
@@ -299,10 +342,13 @@ def create_app(dsn: str, storage_dir: str | Path, *, tenant_id: str = "local-dem
     @app.get("/api/cases/{case_id}/export.xlsx")
     def export(case_id: str):
         snapshot = pipeline.store.case_snapshot(actor, case_id)
+        draft, _, _ = export_review_state(snapshot["items"], snapshot["documents"],
+                                          snapshot.get("tasks", []))
         data = workbook_bytes(snapshot["case"], snapshot["items"], snapshot["documents"],
                               tasks=snapshot.get("tasks", []), fees=snapshot.get("fees", []), reader_mode=pipeline.reader_mode)
+        prefix = "DRAFT-" if draft else ""
         return Response(data, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        headers={"Content-Disposition": f'attachment; filename="DRAFT-sanzo-{case_id}.xlsx"'})
+                        headers={"Content-Disposition": f'attachment; filename="{prefix}sanzo-{case_id}.xlsx"'})
 
     @app.get("/")
     def index():

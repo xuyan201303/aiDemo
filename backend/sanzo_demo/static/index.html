@@ -15,6 +15,22 @@
     <span class="demo-label"><span class="status-dot"></span>ローカル商談 Demo</span>
   </header>
   <main>
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+    <section id="case-list-view" class="case-list-view" aria-labelledby="case-list-heading">
+      <div class="case-list-heading"><div><span class="eyebrow">CASES</span><h1 id="case-list-heading">案件一覧</h1><p class="subtle">見積資料と比較結果を案件ごとに確認できます。</p></div><button id="new-case-button" class="button primary" type="button">＋ 新しい案件</button></div>
+      <form id="new-case-form" class="inline-form case-create-form" hidden>
+        <label>案件名<input id="case-name" name="name" maxlength="200" required autocomplete="off" placeholder="案件名を入力"></label>
+        <button class="button primary" type="submit">案件を作成</button>
+        <button id="cancel-case" class="button quiet" type="button">キャンセル</button>
+      </form>
+      <section class="panel case-list-panel" aria-label="保存された案件">
+        <div class="case-list-controls"><label for="case-search">案件名で検索<input id="case-search" type="search" placeholder="案件名で検索" autocomplete="off"></label><span id="case-list-count" class="subtle"></span></div>
+        <div id="case-list" class="case-list"></div>
+        <p id="case-list-empty" class="empty-inline" hidden>案件がありません。「新しい案件」から作成してください。</p>
+      </section>
+    </section>
+    <div id="case-detail-view" hidden>
+    <nav class="case-breadcrumb" aria-label="案件画面"><button id="case-list-button" type="button" class="text-button">← 案件一覧</button><span id="current-case-name"></span></nav>
     <div class="page-heading">
       <div class="page-heading-copy">
         <h1>原価・単価一覧表</h1>
@@ -51,21 +67,13 @@
         </svg>
       </div>
     </div>
-    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
-
     <div class="workbench">
       <section class="workspace panel" aria-labelledby="case-heading">
         <div class="section-title"><h2 id="case-heading">案件と資料</h2></div>
         <div class="case-toolbar">
           <label class="case-select-label">案件<select id="case-select" aria-label="案件を選択"><option value="">案件を選択してください</option></select></label>
-          <button id="new-case-button" class="button secondary" type="button">＋ 新しい案件</button>
           <div id="case-meta" class="case-meta"></div>
         </div>
-        <form id="new-case-form" class="inline-form" hidden>
-          <label>新しい案件名<input id="case-name" name="name" maxlength="200" required autocomplete="off" placeholder="案件名を入力"></label>
-          <button class="button primary" type="submit">案件を作成</button>
-          <button id="cancel-case" class="button quiet" type="button">キャンセル</button>
-        </form>
         <form id="upload-form" class="upload-zone">
           <div class="upload-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m-4 4 4-4 4 4M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/></svg></div>
           <div class="upload-copy"><strong>見積資料</strong><p id="upload-mode-copy">PDF・Excelをまとめて追加できます</p></div>
@@ -107,6 +115,7 @@
       </section>
     </div>
     <footer class="page-footer"><span>SANZO · ローカル商談 Demo</span><span>名称の確認記録を再利用します。過去の価格は引き継ぎません。</span></footer>
+    </div>
   </main>
 
   <dialog id="manual-dialog" class="form-dialog" aria-labelledby="manual-heading">
@@ -143,6 +152,7 @@
       <div class="review-layout">
         <div class="review-sources"><p class="review-label">原文と今回の単価</p><div id="edit-members" class="row-members" aria-label="確認する原文"></div></div>
         <div class="review-decision">
+      <div class="review-mode-title">表示中の明細をまとめて確認</div>
       <div class="name-save-row">
         <div class="fee-name-field">
           <label for="edit-fee-name">確認後の統一費目名</label>
@@ -152,7 +162,8 @@
         <button id="save-correction" type="submit" class="button primary">確認して保存</button>
       </div>
       <p id="edit-intent-help" class="subtle" role="status" hidden></p>
-      <button id="reclassify-members" class="text-button" type="button" aria-pressed="false" hidden>この明細の分類を変更</button>
+      <button id="reclassify-members" class="text-button" type="button" aria-pressed="false" hidden>表示中の明細をまとめて再分類</button>
+      <button id="open-shared-rename" class="text-button" type="button" hidden>共通の費目名を変更 →</button>
       <div id="edit-error" class="form-error" role="alert" hidden></div>
         </div>
       </div>
@@ -167,6 +178,44 @@
         <label class="checkbox-label reconfirm"><input id="replace-mapping" type="checkbox"><span>撤回済みの対応を、この費目で明示的に再開する</span></label>
         <details class="revoke-details"><summary>個別の原文表記の確認記録を撤回する</summary><label>対象の明細<select id="revoke-member"></select></label><p class="subtle">現在の案件の表示は残します。次の案件には自動適用しません。</p><label>撤回理由<input id="revoke-reason" maxlength="500" placeholder="撤回する理由"></label><button id="revoke-button" type="button" class="button danger">確認記録を撤回</button></details>
       </details>
+    </form>
+  </dialog>
+
+  <dialog id="member-correction-dialog" class="form-dialog" aria-labelledby="member-correction-heading">
+    <form id="member-correction-form" novalidate>
+      <div class="dialog-heading"><div><span class="eyebrow">SINGLE ITEM</span><h2 id="member-correction-heading">この明細を修正</h2></div><button type="button" class="icon-button close-dialog" aria-label="閉じる">×</button></div>
+      <div id="member-correction-summary" class="correction-summary"></div>
+      <p class="subtle">この明細の分類だけを変更します。ほかの明細の金額と分類は変更しません。</p>
+      <label class="field-label">修正後の統一費目<select id="member-fee-select"><option value="">統一費目を選択してください</option></select></label>
+      <label id="member-new-name-field" class="field-label" hidden>新しい統一費目名<input id="member-new-name" maxlength="1024" autocomplete="off" placeholder="新しい名称を入力"></label>
+      <div id="member-correction-error" class="form-error" role="alert" hidden></div>
+      <div class="dialog-actions"><button type="button" class="button quiet close-dialog">キャンセル</button><button id="member-correction-save" type="submit" class="button primary">この明細を保存</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="condition-dialog" class="form-dialog" aria-labelledby="condition-heading">
+    <form id="condition-form" novalidate>
+      <div class="dialog-heading"><div><span class="eyebrow">ITEM CONDITIONS</span><h2 id="condition-heading">適用条件を修正</h2></div><button type="button" class="icon-button close-dialog" aria-label="閉じる">×</button></div>
+      <div id="condition-summary" class="correction-summary"></div>
+      <label class="field-label">修正する条件<select id="condition-field"><option value="equipment">機材・コンテナ</option><option value="billing_unit">課金単位</option></select></label>
+      <dl class="condition-trace"><dt>原文からの読取値</dt><dd id="condition-original"></dd><dt>人工確認値</dt><dd id="condition-human"></dd><dt>現在の有効値</dt><dd id="condition-effective"></dd></dl>
+      <label class="field-label">今回の人工確認値<input id="condition-value" maxlength="100" autocomplete="off" placeholder="例：40FT / コンテナ"></label>
+      <p class="subtle">原文からの読取値を残し、今回の明細で使う条件を確認します。次回の版式読取への自動適用は行いません。</p>
+      <div id="condition-error" class="form-error" role="alert" hidden></div>
+      <div class="dialog-actions"><button type="button" class="button quiet close-dialog">キャンセル</button><button id="condition-save" type="submit" class="button primary">条件を保存</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="shared-rename-dialog" class="form-dialog" aria-labelledby="shared-rename-heading">
+    <form id="shared-rename-form" novalidate>
+      <div class="dialog-heading"><div><span class="eyebrow">SHARED FEE NAME</span><h2 id="shared-rename-heading">共通の費目名を変更</h2></div><button type="button" class="icon-button close-dialog" aria-label="閉じる">×</button></div>
+      <p id="shared-rename-current" class="subtle"></p>
+      <label class="field-label">変更後の共通名称<input id="shared-rename-name" maxlength="1024" autocomplete="off" placeholder="変更後の名称"></label>
+      <p id="shared-rename-preview" class="rename-preview" role="status"></p>
+      <div id="shared-rename-impact" class="rename-impact"></div>
+      <p class="subtle">単価・通貨・適用条件・原文・過去の確認履歴・出力済みの Excel は変更されません。</p>
+      <div id="shared-rename-error" class="form-error" role="alert" hidden></div>
+      <div class="dialog-actions"><button type="button" class="button quiet close-dialog">キャンセル</button><button id="shared-rename-save" type="submit" class="button primary">共通名称を変更</button></div>
     </form>
   </dialog>
 

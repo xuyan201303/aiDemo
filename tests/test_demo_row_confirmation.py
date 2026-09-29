@@ -35,12 +35,22 @@ class RowProjectionTests(unittest.TestCase):
             self.assertEqual(set(cell), {'price', 'currency', 'item_id', 'source_ref'})
         self.assertEqual(row['differentiating_conditions'], {'equipment': '20FT'})
 
-    def test_row_name_state_does_not_claim_memory_active(self):
+    def test_revoked_memory_blocks_row_despite_saved_fee_name(self):
         a = quote('a','A',fee_id='fee')
         a['current_memory_status'] = 'REVOKED'
         row = comparison_projection([a])['rows'][0]
-        self.assertEqual(row['confirmation_status'], '✓ 確認済み')
+        self.assertEqual(row['confirmation_status'], '⚠ 確認必要')
+        self.assertEqual(row['cells']['A'][0]['status'], '⚠ 確認必要')
         self.assertEqual(row['member_items'][0]['current_memory_status'], 'REVOKED')
+
+    def test_one_blocked_member_keeps_confirmed_identity_row_pending(self):
+        first = quote('a', 'A', fee_id='fee')
+        second = quote('b', 'B', fee_id='fee', ready=False)
+        row = comparison_projection([first, second])['rows'][0]
+        self.assertEqual(set(row['item_ids']), {'a', 'b'})
+        self.assertEqual(row['cells']['A'][0]['status'], '✓ 確認済み')
+        self.assertEqual(row['cells']['B'][0]['status'], '⚠ 確認必要')
+        self.assertEqual(row['confirmation_status'], '⚠ 確認必要')
 
     def test_ai_and_ambiguous_row_states(self):
         a,b,c = quote('a','A'),quote('b','B',equipment=None,ready=False),quote('c','C',equipment='40FT')
@@ -181,9 +191,11 @@ class RowConfirmationPostgresTests(unittest.TestCase):
             response=client.post(url,json=body)
             self.assertEqual(response.status_code,200,response.text)
             data=client.get('/api/cases/case-a').json();row=data['comparison']['rows'][0]
-            self.assertEqual(row['confirmation_status'],'✓ 確認済み')
+            # B's applicability remains incomplete, even after both members
+            # adopt the row fee name; the row and XLSX must remain pending.
+            self.assertEqual(row['confirmation_status'],'⚠ 確認必要')
             book=load_workbook(BytesIO(client.get('/api/cases/case-a/export.xlsx').content))
             self.assertEqual(book['原価単価一覧表']['B4'].value,'10 CNY')
             self.assertEqual(book['原価単価一覧表']['C4'].value,'9 CNY')
-            self.assertEqual(book['確認情報']['B2'].value,'✓ 確認済み')
+            self.assertEqual(book['確認情報']['B2'].value,'⚠ 確認必要')
             book.close()
