@@ -31,22 +31,48 @@ def _company(item):
         return obs.get("forwarder_id") or item.get("document_display_label") or "資料 " + obs.get("document_id", item["item_id"])
     return obs.get("forwarder_id") or "会社未確認"
 
+def _current_fee_catalog(items, fees):
+    """Resolve current display metadata without changing adopted audit snapshots.
+
+    The catalog is authoritative (including its matching concurrency version).
+    Item effective fields support callers without a catalog; adopted names are
+    only a compatibility fallback for legacy inputs without current metadata.
+    """
+    catalog = {fee["fee_id"]: {"name": _known(fee.get("display_name") or fee.get("name")),
+                               "version": fee.get("name_version")}
+               for fee in fees if fee.get("fee_id") and _known(fee.get("display_name") or fee.get("name"))}
+    effective = defaultdict(list)
+    for item in items:
+        fee_id, name = item.get("current_fee_id"), _known(item.get("effective_fee_name"))
+        if fee_id and name:
+            version = item.get("effective_fee_name_version")
+            effective[fee_id].append((version if type(version) is int and version > 0 else 0, name))
+    for fee_id, values in effective.items():
+        version = max(v for v, _ in values)
+        names = {name for v, name in values if v == version}
+        # A conflicting current-name record cannot authorize a rename. Never
+        # infer recency from display text or from the adopted item version.
+        current = {"name": next(iter(names)) if len(names) == 1 else None,
+                   "version": version if version and len(names) == 1 else None}
+        if fee_id not in catalog:
+            catalog[fee_id] = current
+        elif catalog[fee_id]["version"] is None and catalog[fee_id]["name"] == current["name"]:
+            catalog[fee_id]["version"] = current["version"]
+    for item in items:
+        fee_id, name = item.get("current_fee_id"), _known(item.get("current_fee_name"))
+        if fee_id and name:
+            catalog.setdefault(fee_id, {"name": name, "version": None})
+    return catalog
+
 def comparison_groups(items, fees=()):
     names = defaultdict(set)
-    saved_ids = {i.get("current_fee_id") for i in items if i.get("current_fee_name") is not None}
-    for fee in fees:
-        if fee.get("fee_id") and fee["fee_id"] not in saved_ids:
-            name = _known(fee.get("display_name") or fee.get("name"))
-            if name: names[fee["fee_id"]].add(name)
-    for item in items:
-        if item.get("current_fee_id") and _known(item.get("current_fee_name")):
-            names[item["current_fee_id"]].add(_known(item["current_fee_name"]))
+    for fee_id, current in _current_fee_catalog(items, fees).items():
+        names[fee_id].add(current["name"])
     # First preserve exact, proven fee identity (and duplicate quotes); neither name nor
     # incomplete-context grouping modifies the stored item.
     seeds = {}
     for item in items:
-        key = (_identity(item), item.get("current_fee_name_version") if item.get("current_fee_id") else None,
-               tuple(_known(_context(item).get(k)) for k in CONDITIONS))
+        key = (_identity(item), tuple(_known(_context(item).get(k)) for k in CONDITIONS))
         if _company(item) == "会社未確認": key = ("isolated", item["item_id"])
         seeds.setdefault(key, []).append(item)
     groups = list(seeds.values())
@@ -62,10 +88,6 @@ def comparison_groups(items, fees=()):
                     x, y = _known(_context(left).get(key)), _known(_context(right).get(key))
                     if x is not None and y is not None and x != y: return False
                 x, y = _identity(left), _identity(right)
-                if (x == y and x[0] == "fee" and left.get("current_fee_name_version") is not None
-                        and right.get("current_fee_name_version") is not None
-                        and left["current_fee_name_version"] != right["current_fee_name_version"]):
-                    return False  # Preserve explicitly adopted historical names.
                 if "unclassified" in (x[0], y[0]): return False
                 identified = {"fee", "candidate"}
                 if x[0] in identified and y[0] in identified:
@@ -148,20 +170,21 @@ def comparison_projection(items, fees=(), documents=()):
         (" [" + i["observation"]["document_id"] + "]" if counts.get(labels.get(i.get("observation", {}).get("document_id")), 0) > 1 else ""))
         if i.get("observation", {}).get("document_id") in labels else i.get("document_display_label")} if uses_fee_policy(i.get("source_ref"), i.get("input_kind")) and not i.get("observation", {}).get("forwarder_id") else i for i in items]
     companies = sorted({_company(i) for i in items})
-    fee_names = {f["fee_id"]: f.get("display_name") or f.get("name") for f in fees if f.get("fee_id")}
+    fee_catalog = _current_fee_catalog(items, fees)
     rows = []
     for group in comparison_groups(items, fees):
         representative = group["item"]
+        current_fee = fee_catalog.get(representative.get("current_fee_id"), {})
         rename_allowed = (bool(representative.get("current_fee_id")) and not group["ambiguous"]
             and all(i.get("current_fee_id") == representative["current_fee_id"]
                     and i.get("current_memory_status") not in {"CONFLICTED", "REVOKED"}
                     for i in group["items"]))
-        label = "費目未確認" if group["ambiguous"] else representative.get("current_fee_name") or fee_names.get(representative.get("current_fee_id")) or representative.get("ai_suggested_name") or "費目未確認"
+        label = "費目未確認" if group["ambiguous"] else current_fee.get("name") or representative.get("ai_suggested_name") or "費目未確認"
         rows.append({"row_id": row_identity([i["item_id"] for i in group["items"]]),
             "confirmation_status": row_confirmation_status(group),
             "rename_allowed": rename_allowed,
             "rename_fee_id": representative.get("current_fee_id") if rename_allowed else None,
-            "rename_name_version": representative.get("effective_fee_name_version") if rename_allowed else None,
+            "rename_name_version": current_fee.get("version") if rename_allowed else None,
             "member_items": [{**i, "forwarder": _company(i), "learning_eligible": learning_eligible(i)} for i in group["items"]],
             "label": label, "equipment": group["conditions"][1],
             "ambiguous": group["ambiguous"], "item_ids": [i["item_id"] for i in group["items"]],

@@ -3,53 +3,110 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>SANZO | 原価単価一覧表</title>
+  <title>SANZO | 原価・単価一覧表</title>
   <link rel="stylesheet" href="/static/style.css">
   <script src="/static/workflow.js" defer></script>
   <script src="/static/app.js" defer></script>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/" aria-label="SANZO ホーム"><span class="brand-mark" aria-hidden="true">S</span><span>SANZO<small>原価単価一覧表</small></span></a>
+    <a class="brand" href="/" aria-label="SANZO ホーム"><span class="brand-mark" aria-hidden="true">S</span><span>SANZO<small>原価・単価一覧表</small></span></a>
+    <div class="header-context">見積比較ワークスペース</div>
     <span class="demo-label"><span class="status-dot"></span>ローカル商談 Demo</span>
   </header>
   <main>
-    <div class="page-heading"><div><p class="eyebrow">COST COMPARISON</p><h1>原価を比べる。確認を、次の案件へ。</h1><p class="subtle">原文を確認して費目を修正すると、同じ会社・条件の新しい案件に確認済みの名称を引き継ぎます。</p></div></div>
-    <section id="connection-panel" class="connection-panel" aria-label="接続状態"><div class="connection-title">接続状態を確認しています…</div></section>
+    <div class="page-heading">
+      <div class="page-heading-copy">
+        <h1>原価・単価一覧表</h1>
+        <p class="subtle">複数社の見積を、ひとつの基準で比較。</p>
+      </div>
+      <ol class="workflow-guide" aria-label="操作の流れ"><li><span>01</span> 見積取込</li><li><span>02</span> 費目確認</li><li><span>03</span> 一覧表完成</li></ol>
+      <div class="workplace-scene" aria-hidden="true">
+        <svg viewBox="0 0 400 174" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="211" cy="158" rx="176" ry="7" fill="#e5e9de"/>
+          <rect x="167" y="8" width="139" height="91" rx="7" fill="#edf1e6"/>
+          <path d="M175 13h123M211 8v91M259 8v91M167 52h139" stroke="#d4dfce" stroke-width="1.5"/>
+          <path d="M77 54h54M91 54v7m26-7v7" stroke="#bda17e" stroke-width="3"/>
+          <rect x="83" y="36" width="10" height="17" rx="1" fill="#a9ba99"/>
+          <rect x="97" y="32" width="8" height="21" rx="1" fill="#c4ae8c"/>
+          <rect x="108" y="38" width="14" height="15" rx="2" fill="#e2e9dc"/>
+          <path d="M142 105v48m137-48v48M142 142h137" stroke="#57765e" stroke-width="3"/>
+          <rect x="132" y="96" width="158" height="10" rx="3" fill="#c8a27b"/>
+          <path d="M138 102h146" stroke="#a17d58"/>
+          <rect x="178" y="51" width="57" height="36" rx="3" fill="#fffefa" stroke="#5b7765" stroke-width="2"/>
+          <rect x="183" y="56" width="47" height="26" rx="1" fill="#edf3e9"/>
+          <path d="M206 87v8m-11 0h23" stroke="#5b7765" stroke-width="2"/>
+          <path d="M154 94h18m-13-4h11" stroke="#8c9e84" stroke-width="2"/>
+          <rect x="262" y="82" width="12" height="14" rx="3" fill="#abbd98"/>
+          <path d="M268 82V65m0 12c-12-1-12-11-8-11 7 0 8 11 8 11Zm0-5c12-2 11-12 7-11-7 2-7 11-7 11Z" fill="#8aa47b"/>
+          <rect x="306" y="73" width="32" height="37" rx="10" fill="#9caf8b" stroke="#698365" stroke-width="1.5"/>
+          <path d="M314 110v8m-12 0h29m-15 2v27m-17 5 17-5 17 5m-31-42v9m29-9v9" stroke="#57765e" stroke-width="2.5"/>
+          <path d="M333 122h-33" stroke="#9caf8b" stroke-width="8"/>
+          <rect x="68" y="122" width="45" height="32" rx="2" fill="#ddc3a2" stroke="#b59570" stroke-width="1.5"/>
+          <path d="M90 123v11m-13 12h8" stroke="#b18d65" stroke-width="2"/>
+          <rect x="84" y="93" width="38" height="29" rx="2" fill="#f3e6d4" stroke="#bda17e" stroke-width="1.5"/>
+          <path d="M103 94v10m-11 9h7" stroke="#bda17e" stroke-width="2"/>
+          <path d="M355 143v-27m0 15c-17-2-18-17-12-16 10 1 12 16 12 16Zm0-9c17-2 19-20 11-17-8 2-11 17-11 17Z" fill="#93aa80"/>
+          <path d="M344 139h23l-3 17h-17z" fill="#c6ae8d"/>
+        </svg>
+      </div>
+    </div>
     <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
 
-    <section class="workspace panel" aria-labelledby="case-heading">
-      <div class="section-title"><div class="step-number">1</div><div><h2 id="case-heading">案件と資料</h2><p class="subtle">1 回目は Excel と PDF、2 回目は新しい案件に後続の Excel を追加します。</p></div></div>
-      <div class="case-toolbar">
-        <label class="case-select-label">案件<select id="case-select" aria-label="案件を選択"><option value="">案件を選択してください</option></select></label>
-        <button id="new-case-button" class="button secondary" type="button">＋ 新しい案件</button>
-        <div id="case-meta" class="case-meta"></div>
-      </div>
-      <form id="new-case-form" class="inline-form" hidden>
-        <label>新しい案件名<input id="case-name" name="name" maxlength="200" required autocomplete="off" placeholder="案件名を入力"></label>
-        <button class="button primary" type="submit">案件を作成</button>
-        <button id="cancel-case" class="button quiet" type="button">キャンセル</button>
-      </form>
-      <form id="upload-form" class="upload-zone">
-        <div class="upload-symbol" aria-hidden="true">↥</div>
-        <div class="upload-copy"><strong>比較する見積資料を追加</strong><p id="upload-mode-copy">Excel＋PDF をまとめて選択できます。再選択で追加します。</p></div>
-        <input id="files" name="file" type="file" accept=".xlsx,.pdf" multiple aria-label="アップロードする資料" disabled>
-        <button id="upload-button" class="button primary" type="submit" disabled>アップロード・解析開始</button>
-      </form>
-      <div class="pending-panel"><p id="pending-count" role="status">0 件の待ちリスト</p><ul id="pending-files"></ul></div>
-      <div id="ai-pause" class="notice error" role="status" hidden></div>
-      <div id="upload-progress" class="subtle" role="status"></div>
-      <div id="documents" class="documents"></div>
-      <p id="no-documents" class="empty-inline">案件を作成し、見積資料を追加してください。</p>
-    </section>
+    <div class="workbench">
+      <section class="workspace panel" aria-labelledby="case-heading">
+        <div class="section-title"><h2 id="case-heading">案件と資料</h2></div>
+        <div class="case-toolbar">
+          <label class="case-select-label">案件<select id="case-select" aria-label="案件を選択"><option value="">案件を選択してください</option></select></label>
+          <button id="new-case-button" class="button secondary" type="button">＋ 新しい案件</button>
+          <div id="case-meta" class="case-meta"></div>
+        </div>
+        <form id="new-case-form" class="inline-form" hidden>
+          <label>新しい案件名<input id="case-name" name="name" maxlength="200" required autocomplete="off" placeholder="案件名を入力"></label>
+          <button class="button primary" type="submit">案件を作成</button>
+          <button id="cancel-case" class="button quiet" type="button">キャンセル</button>
+        </form>
+        <form id="upload-form" class="upload-zone">
+          <div class="upload-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m-4 4 4-4 4 4M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/></svg></div>
+          <div class="upload-copy"><strong>見積資料</strong><p id="upload-mode-copy">PDF・Excelをまとめて追加できます</p></div>
+          <input id="files" name="file" type="file" accept=".xlsx,.pdf" multiple aria-label="アップロードする資料" disabled>
+          <button id="upload-button" class="button primary" type="submit" disabled>比較表を作成</button>
+        </form>
+        <div class="pending-panel"><p id="pending-count" role="status">0 件の待ちリスト</p><ul id="pending-files"></ul></div>
+        <div id="ai-pause" class="notice error" role="status" hidden></div>
+        <div id="upload-progress" class="subtle" role="status"></div>
+        <div id="documents" class="documents"></div>
+        <p id="no-documents" class="empty-inline">案件を作成し、見積資料を追加してください。</p>
+        <p class="workspace-instruction">確認した費目名は、原文と適用条件に応じて次回の案件に反映されます。</p>
+        <section id="connection-panel" class="connection-panel" aria-label="接続状態"><div class="connection-title">接続状態を確認しています…</div></section>
+      </section>
 
-    <section class="comparison panel" aria-labelledby="comparison-heading">
-      <div class="section-title comparison-heading"><div class="step-number">2</div><div><h2 id="comparison-heading">原価：単価一覧表</h2><p class="subtle">左端の「確認・修正」から統一費目名を確認できます。単価は今回の資料の値です。</p></div><div class="comparison-actions"><span id="item-count" class="count-pill">0 明細</span><button id="export-button" class="button secondary" type="button" disabled>草稿 Excel ダウンロード ↓</button></div></div>
-      <div class="table-legend"><span>✓ 確認済み</span><span>● AI仮判定</span><span>⚠ 確認必要</span><span>— 見積なし</span></div>
-      <div id="comparison-table" class="table-scroll"></div>
-      <div id="empty-comparison" class="empty-state"><div class="empty-icon" aria-hidden="true">▤</div><h3>ここに単価比較表が表示されます</h3><p>資料を追加し、「アップロード・解析開始」を選択してください。<br>読み取り結果と、必要に応じた AI の未確認提案をここに表示します。</p></div>
-    </section>
-    <footer class="page-footer"><span>SANZO · 三ファイル商談 Demo</span><span>名称の確認記録を再利用します。過去の価格は引き継ぎません。</span></footer>
+      <section class="comparison panel" aria-labelledby="comparison-heading">
+        <div class="section-title comparison-heading">
+          <div class="comparison-title"><h2 id="comparison-heading">比較結果</h2><p class="subtle">費目を統一して、フォワーダーごとの差を確認できます</p></div>
+          <div class="comparison-actions"><span id="item-count" class="count-pill">0 明細</span><button id="export-button" class="button secondary" type="button" disabled>草稿 Excel ダウンロード ↓</button></div>
+        </div>
+        <div class="comparison-toolbar"><p class="subtle">原価・単価一覧表</p><div class="table-legend"><span>✓ 確認済み</span><span>● AI仮判定</span><span>⚠ 確認必要</span><span>— 見積なし</span></div></div>
+        <div id="comparison-table" class="table-scroll"></div>
+        <div id="empty-comparison" class="empty-state">
+          <div class="preview-caption"><span>完成イメージ</span><span>以下は表示例です。実際の見積金額ではありません。</span></div>
+          <div class="table-scroll">
+            <table class="preview-table" aria-label="比較結果の表示例">
+              <thead><tr><th scope="col">統一費目</th><th scope="col">A社 <small>（例）</small></th><th scope="col">B社 <small>（例）</small></th></tr></thead>
+              <tbody>
+                <tr><th scope="row">配送費</th><td>— <span class="quote-currency">JPY</span></td><td>— <span class="quote-currency">JPY</span></td></tr>
+                <tr><th scope="row">搬入作業費</th><td>— <span class="quote-currency">JPY</span></td><td>— <span class="quote-currency">JPY</span></td></tr>
+                <tr><th scope="row">組立・設置費</th><td>— <span class="quote-currency">JPY</span></td><td>— <span class="quote-currency">JPY</span></td></tr>
+                <tr><th scope="row">保管料</th><td>— <span class="quote-currency">JPY</span></td><td>— <span class="quote-currency">JPY</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="empty-guidance"><h3>見積資料を追加して、比較表を作成</h3><p>「見積資料」からファイルを追加し、「比較表を作成」を選択してください。</p></div>
+        </div>
+        <div class="comparison-note"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><p>単価は<span>今回の資料の値</span>です。過去の価格は引き継ぎません。</p></div>
+      </section>
+    </div>
+    <footer class="page-footer"><span>SANZO · ローカル商談 Demo</span><span>名称の確認記録を再利用します。過去の価格は引き継ぎません。</span></footer>
   </main>
 
   <dialog id="manual-dialog" class="form-dialog" aria-labelledby="manual-heading">
@@ -82,8 +139,10 @@
 
   <dialog id="edit-dialog" class="edit-dialog" aria-labelledby="edit-heading">
     <form id="edit-form" novalidate>
-      <div class="dialog-heading"><h2 id="edit-heading">統一費目を確認</h2><button type="button" class="icon-button close-dialog" aria-label="閉じる">×</button></div>
-      <div id="edit-members" class="row-members" aria-label="確認する原文"></div>
+      <div class="dialog-heading"><div><span class="eyebrow">FEE CONFIRMATION</span><h2 id="edit-heading">統一費目を確認</h2></div><button type="button" class="icon-button close-dialog" aria-label="閉じる">×</button></div>
+      <div class="review-layout">
+        <div class="review-sources"><p class="review-label">原文と今回の単価</p><div id="edit-members" class="row-members" aria-label="確認する原文"></div></div>
+        <div class="review-decision">
       <div class="name-save-row">
         <div class="fee-name-field">
           <label for="edit-fee-name">確認後の統一費目名</label>
@@ -95,6 +154,8 @@
       <p id="edit-intent-help" class="subtle" role="status" hidden></p>
       <button id="reclassify-members" class="text-button" type="button" aria-pressed="false" hidden>この明細の分類を変更</button>
       <div id="edit-error" class="form-error" role="alert" hidden></div>
+        </div>
+      </div>
       <details id="edit-details" class="edit-details">
         <summary>詳細を見る</summary>
         <p id="edit-warning" class="edit-warning" role="status" hidden></p>

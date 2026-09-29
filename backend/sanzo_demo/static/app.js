@@ -3,7 +3,7 @@
 const state = { cases: [], snapshot: null, selectedCase: "", status: null, manualDocument: null, editItem: null, editRow: null, requestKeys: new Map(), processRequests: new Map(), taskPollTimer: null, pollDeadline: null, snapshotSequence: 0, busy: false };
 const $ = id => document.getElementById(id);
 const conditionLabels = { transport_mode: "輸送", equipment: "機材", billing_unit: "単位", charge_scope: "範囲", extra_terms: "追加条件" };
-const statusLabels = { ACTIVE: "再利用可能", MEMORY_APPLIED: "過去の修正を適用", REVIEW_REQUIRED: "確認が必要", AI_REQUIRED: "AI 判断待ち", AI_SUGGESTED: "AI 提案・未確認", READING_REQUIRED: "読み取りが必要", HUMAN_CONFIRMED: "今回の確認を保存", MANUAL_CONFIRMED: "人工入力", CONFIRMED: "今回の確認を保存", CONFLICTED: "対応が競合", REVOKED: "対応を撤回" };
+const statusLabels = { ACTIVE: "再利用可能", MEMORY_APPLIED: "前回確認を反映", REVIEW_REQUIRED: "確認が必要", AI_REQUIRED: "費目確認待ち", AI_SUGGESTED: "費目候補・未確認", READING_REQUIRED: "読み取りが必要", HUMAN_CONFIRMED: "今回の確認を保存", MANUAL_CONFIRMED: "人工入力", CONFIRMED: "今回の確認を保存", CONFLICTED: "対応が競合", REVOKED: "対応を撤回" };
 
 function node(tag, className, text) {
   const element = document.createElement(tag);
@@ -94,8 +94,8 @@ function renderStatus() {
   const ready = Boolean(reader.ready);
   if (mock) panel.append(node("div", "debug-banner", "Demoモード：文書解析部分はMock SDKを使用しています。AIによる費目認識、手動修正、確認結果の保存・再利用は実処理です。"));
   panel.classList.toggle("ready", ready);
-  panel.append(node("div", "connection-title", ready ? "資料を追加すると、自動で分析します。必要な費目名を確認して保存してください。" : "資料の読み取り設定を確認してください。"));
-  $("upload-mode-copy").textContent = mock ? "現在の Demo Mock は指定の三つのサンプルのみ対応しています。" : "Excel＋PDF をまとめて選択できます。再選択で追加します。";
+  panel.append(node("div", "connection-title", ready ? "資料を追加し、「比較表を作成」を選択してください。結果の費目名を確認して保存できます。" : "資料の読み取り設定を確認してください。"));
+  $("upload-mode-copy").textContent = mock ? "現在の Demo Mock は指定の三つのサンプルのみ対応しています。" : "PDF・Excelをまとめて追加できます";
   const details = node("details", "connection-details");
   details.append(node("summary", "", "詳細を見る"));
   for (const [name, connection] of [[mock ? "デモ原文 fixture" : "SDK", reader], ["OpenAI API", ai]]) {
@@ -122,10 +122,10 @@ const taskStatusLabels = {
   QUEUED: "読み取りを待っています",
   PENDING: "読み取りを待っています",
   RUNNING: "処理中",
-  READING: "SDK で原文を読み取り中",
-  SDK_READING: "SDK で原文を読み取り中",
+  READING: "原文を読み取り中",
+  SDK_READING: "原文を読み取り中",
   CLASSIFYING: "費目を識別中",
-  AI_CLASSIFYING: "AI で費目を識別中",
+  AI_CLASSIFYING: "費目を識別中",
   SAVING: "読み取り結果を保存中",
   AVAILABLE: "読み取り完了",
   REVIEW_REQUIRED: "読み取り結果の確認が必要です",
@@ -550,10 +550,13 @@ function openRowEdit(row, draft = null, requestKeys = null) {
     const footer = node("div", "member-source-row");
     const ref = asObject(item.source_ref), locator = asObject(ref.locator);
     const shortPosition = source.located && ref.kind === "PDF_PAGE" ? locator.page_number + "ページ" : source.position;
-    const sourceText = node("span", "member-source", source.filename + "｜" + shortPosition);
+    const sourceText = node("span", "member-source", source.filename + " / " + shortPosition);
     sourceText.title = sourceText.textContent;
-    footer.append(sourceText);
-    card.append(heading, footer, button("原文を見る →", () => openPreview(source.documentId, item), "text-button member-preview")); host.append(card);
+    const sourceLink = button("", () => openPreview(source.documentId, item), "text-button member-preview");
+    sourceLink.append(sourceText, node("span", "source-arrow", " ↗"));
+    sourceLink.title = "原文を見る：" + sourceText.textContent;
+    footer.append(sourceLink);
+    card.append(heading, footer); host.append(card);
     const details = node("section", "member-conditions"); details.dataset.detailMemberId = item.item_id;
     details.append(node("h3", "", item.forwarder + "：" + (observation(item).raw_label || "未取得")));
     const conditions = node("dl", "edit-facts");
@@ -572,14 +575,11 @@ function openRowEdit(row, draft = null, requestKeys = null) {
   revokeSelect.value = state.editItem.item_id;
   const confirmed = members.filter(item => item.current_fee_id);
   const confirmedIds = new Set(confirmed.map(item => item.current_fee_id));
-  const confirmedNames = new Set(confirmed.map(item => item.current_fee_name || feeName(availableFees().find(f => f.fee_id === item.current_fee_id) || {})).filter(Boolean).map(normalizedFeeName));
-  const nameConflict = confirmedIds.size > 1 || confirmedNames.size > 1;
+  // Adopted names belong to each member's audit history; row identity is fee_id.
+  const nameConflict = confirmedIds.size > 1;
   state.selectedFeeId = !nameConflict && confirmedIds.size === 1 ? [...confirmedIds][0] : "";
-  $("edit-fee-name").value = nameConflict || row.ambiguous ? "" : confirmedNames.size ? [...confirmedNames][0] : row.label === "費目未確認" ? "" : row.label;
-  if (renameAvailable(row)) {
-    const effectiveNames = new Set(confirmed.map(item => item.effective_fee_name).filter(Boolean).map(normalizedFeeName));
-    if (effectiveNames.size === 1) $("edit-fee-name").value = [...effectiveNames][0];
-  }
+  const catalogName = feeName(availableFees().find(fee => fee.fee_id === state.selectedFeeId) || {});
+  $("edit-fee-name").value = nameConflict || row.ambiguous ? "" : catalogName || (row.label === "費目未確認" ? "" : row.label);
   state.editInitialFeeName = normalizedFeeName($("edit-fee-name").value);
   const selectedFee = availableFees().find(fee => fee.fee_id === state.selectedFeeId
     && normalizedFeeName(feeName(fee)) === state.editInitialFeeName);

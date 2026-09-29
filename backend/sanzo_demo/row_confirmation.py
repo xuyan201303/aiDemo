@@ -125,7 +125,7 @@ class RowConfirmationService:
             ids = conn.execute("SELECT item_id FROM sanzo_core.items WHERE tenant_id=%s AND case_id=%s ORDER BY item_id",
                                (actor.tenant_id, command.case_id)).fetchall()
             items = [self.store._item(conn, actor, row["item_id"]) for row in ids]
-            fees = conn.execute("SELECT fee_id,display_name FROM sanzo_core.fees WHERE tenant_id=%s", (actor.tenant_id,)).fetchall()
+            fees = conn.execute("SELECT fee_id,display_name,name_version FROM sanzo_core.fees WHERE tenant_id=%s", (actor.tenant_id,)).fetchall()
             documents = conn.execute("SELECT document_id,original_filename FROM sanzo_core.documents WHERE tenant_id=%s AND case_id=%s", (actor.tenant_id, command.case_id)).fetchall()
             row = next((row for row in comparison_projection(items, fees, documents)["rows"] if row["row_id"] == command.row_id), None)
             if row is None or set(row["item_ids"]) != {m.item_id for m in members}:

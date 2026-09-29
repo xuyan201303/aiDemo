@@ -10,20 +10,25 @@ from copy import deepcopy
 from dataclasses import replace
 from io import BytesIO
 import os
+from pathlib import Path
+import tempfile
 from threading import Barrier, Event
 import unittest
 from types import SimpleNamespace
 from uuid import uuid4
 
 from openpyxl import load_workbook
+from fastapi.testclient import TestClient
 
 from sanzo_core.domain import (ConflictError, Context, CorrectionCommand,
     DecisionKind, Observation, Principal, RevokeCommand, ScopeError, SyntheticLine,
     canonical_json, memory_key)
 from sanzo_core.demo_store import DemoStore
+from sanzo_core.ingestion_store import IngestionStore
 from sanzo_core.postgres import PostgresRepository
 from sanzo_core.service import ReviewService
 from sanzo_demo.comparison import comparison_projection
+from sanzo_demo.app import create_app
 from sanzo_demo.export import workbook_bytes
 from sanzo_demo.row_confirmation import (RowConfirmationCommand,
     RowConfirmationService, RowMember)
@@ -113,6 +118,8 @@ class FeeRenamePostgresR3Tests(unittest.TestCase):
         self.fee_id = saved["fee_id"]
         self.initial_history = self.snapshot("history")
         self.initial_export = self.export_values("history")
+        self.initial_export_bytes = workbook_bytes(self.initial_history["case"],
+            self.initial_history["items"], self.initial_history["documents"], fees=self.initial_history["fees"])
 
     def new_case(self, name):
         self.service.create_case(self.actor, name, "INJECTED_TEST_CASE_R3 " + name)
@@ -209,9 +216,23 @@ class FeeRenamePostgresR3Tests(unittest.TestCase):
     def assert_old_case_preserved(self):
         current = self.snapshot("history")
         for old, new in zip(self.initial_history["items"], current["items"]):
-            for field in ("current_fee_id", "current_fee_name", "current_price", "currency", "source_ref", "observation", "version"):
-                self.assertEqual(old[field], new[field], field)
-        self.assertEqual(self.export_values("history"), self.initial_export)
+            for field in ("current_fee_id", "current_fee_name", "current_fee_name_snapshot",
+                          "current_fee_name_version", "current_price", "currency", "source_ref",
+                          "observation", "raw_value", "version"):
+                self.assertEqual(old.get(field), new.get(field), field)
+        # An existing exported artifact stays frozen. A newly requested workbook
+        # uses the current catalog for its comparison sheet, but its item/source
+        # detail sheet must retain each originally adopted name and source.
+        old_book = load_workbook(BytesIO(self.initial_export_bytes), read_only=True)
+        try:
+            self.assertEqual({name: list(old_book[name].values) for name in self.initial_export},
+                             self.initial_export)
+        finally:
+            old_book.close()
+        exported = self.export_values("history")
+        self.assertEqual(exported["明細と出典"], self.initial_export["明細と出典"])
+        self.assertEqual(exported["原価単価一覧表"][3][0], self.fee()["display_name"])
+        self.assertEqual(exported["原価単価一覧表"][3][1:], self.initial_export["原価単価一覧表"][3][1:])
 
     def assert_new_import(self, item, price):
         self.assertEqual(item["current_fee_id"], self.fee_id)
@@ -453,7 +474,7 @@ class FeeRenamePostgresR3Tests(unittest.TestCase):
         self.assertEqual(self.database_snapshot(), before)
 
 
-    def test_R3_18_old_case_mixed_adopted_name_versions_preserves_historical_rows(self):
+    def test_R3_18_mixed_adopted_versions_share_current_row_without_rewriting_history(self):
         self.new_case("historical-view")
         old_a = self.import_line("historical-view", "A", "DOC FEE", "8000")
         self.new_case("editing")
@@ -468,13 +489,86 @@ class FeeRenamePostgresR3Tests(unittest.TestCase):
         self.assertEqual(retained_a["effective_fee_name_version"], 2)
         before = self.database_snapshot()
         rows = self.projection("historical-view")["rows"]
-        self.assertEqual(len(rows), 2, "Viewing an older case cannot relabel its saved old-name item")
-        self.assertEqual({row["display_name"] for row in rows}, {OLD_NAME, NEW_NAME})
+        self.assertEqual(len(rows), 1, "Adopted name versions are audit facts, not current business row identities")
+        self.assertEqual({row["display_name"] for row in rows}, {NEW_NAME})
         self.assertEqual({row["fee_identity"] for row in rows}, {self.fee_id})
+        self.assertEqual({item["current_fee_name_version"] for item in rows[0]["member_items"]}, {1, 2})
         values = self.export_values("historical-view")["原価単価一覧表"]
-        self.assertIn(OLD_NAME, [row[0] for row in values])
-        self.assertIn(NEW_NAME, [row[0] for row in values])
+        self.assertEqual([row[0] for row in values[3:]], [NEW_NAME])
+        self.assertEqual(values[3][1:3], ("8000 JPY", "7500.00 JPY"))
+        self.assertEqual(self.current(old_a), retained_a)
         self.assertEqual(self.database_snapshot(), before, "Projection/export must not write snapshots")
+
+    def test_R3_21_current_http_and_xlsx_merge_40ft_versions_without_history_writes(self):
+        self.new_case("active-freight")
+        twenty = Context("SEA", "20FT", "PER_CONTAINER", "ORIGIN", "STANDARD")
+        forty = replace(twenty, equipment="40FT")
+        a20 = self.import_line("active-freight", "A", "OCEAN 20", "1200", context=twenty, currency="USD")
+        self.import_line("active-freight", "B", "FREIGHT 20", "1150", context=twenty, currency="USD")
+        a40 = self.import_line("active-freight", "A", "OCEAN 40", "1900", context=forty, currency="USD")
+        b40 = self.import_line("active-freight", "B", "FREIGHT 40", "1850", context=forty, currency="USD")
+        first = self.rows.confirm(self.actor, self.command("active-freight", selected_item=a20,
+                                                         new_fee_name="海上運賃"))
+        fee_id = first["fee_id"]
+        self.rows.confirm(self.actor, self.command("active-freight", selected_item=a40,
+            new_fee_name=None, target_fee_id=fee_id, intent="CONFIRM_MEMBERS"))
+        adopted_forty = deepcopy([self.current(a40), self.current(b40)])
+        old_snap = self.snapshot("active-freight")
+        old_xlsx = workbook_bytes(old_snap["case"], old_snap["items"], old_snap["documents"], fees=old_snap["fees"])
+        self.rows.confirm(self.actor, self.command("active-freight", selected_item=a20,
+            new_fee_name="海上運賃_v1", intent="RENAME_FEE", expected_fee_id=fee_id, expected_name_version=1))
+        # RENAME_FEE remains scoped to explicitly confirmed row members. The
+        # current read must not require bulk adoption by the other 40FT row.
+        for old in adopted_forty:
+            current = self.current(old)
+            for field in ("current_fee_name", "current_fee_name_version", "version", "observation",
+                          "source_ref", "raw_value", "current_price", "currency"):
+                self.assertEqual(current[field], old[field], field)
+            self.assertEqual((current["effective_fee_name"], current["effective_fee_name_version"]),
+                             ("海上運賃_v1", 2))
+        later20 = self.import_line("active-freight", "A", "OCEAN 20", "1350", context=twenty, currency="USD")
+        later40 = self.import_line("active-freight", "A", "OCEAN 40", "2050", context=forty, currency="USD")
+        self.assertEqual((later40["current_fee_id"], later40["current_fee_name_version"]), (fee_id, 2))
+        self.assertEqual((later20["current_fee_id"], later20["current_fee_name_version"]), (fee_id, 2))
+        before = self.database_snapshot()
+        with tempfile.TemporaryDirectory(prefix="sanzo-projection-") as storage:
+            historical_file = Path(storage) / "already-generated.xlsx"
+            historical_file.write_bytes(old_xlsx)
+            # No real SDK/AI pipeline is constructed or invoked by this GET-only
+            # HTTP probe. It uses the actual store and the isolated test tenant.
+            runtime = SimpleNamespace(store=IngestionStore(self.repo), reader_mode="SYNTHETIC_STRUCTURED")
+            with TestClient(create_app(DSN, storage, tenant_id=self.tenant, integrations=runtime)) as client:
+                response = client.get("/api/cases/active-freight")
+                self.assertEqual(response.status_code, 200)
+                payload = response.json()
+                projection = payload["comparison"]
+                exported = client.get("/api/cases/active-freight/export.xlsx")
+                self.assertEqual(exported.status_code, 200)
+            self.assertEqual(historical_file.read_bytes(), old_xlsx)
+        self.assertEqual(len(projection["rows"]), 2)
+        by_equipment = {row["equipment"]: row for row in projection["rows"]}
+        for equipment, prices in (("20FT", ["1200", "1150", "1350"]),
+                                  ("40FT", ["1900", "1850", "2050"])):
+            row = by_equipment[equipment]
+            self.assertEqual(row["display_name"], "海上運賃_v1（" + equipment + "）")
+            self.assertEqual(row["fee_identity"], fee_id)
+            self.assertCountEqual([cell["price"] for cells in row["cells"].values() for cell in cells], prices)
+        book = load_workbook(BytesIO(exported.content), read_only=True)
+        try:
+            sheet = book["原価単価一覧表"]
+            self.assertEqual(sheet.max_row - 3, len(projection["rows"]))
+            for number, row in enumerate(projection["rows"], 4):
+                self.assertEqual(sheet.cell(number, 1).value, row["display_name"])
+                for column, company in enumerate(projection["companies"], 2):
+                    expected = "\n".join(cell["price"] + " " + cell["currency"] for cell in row["cells"][company]) or "—"
+                    self.assertEqual(sheet.cell(number, column).value, expected)
+            adopted = {row[0]: row[3] for row in list(book["明細と出典"].values)[1:]}
+            self.assertEqual(adopted[a40["item_id"]], "海上運賃")
+            self.assertEqual(adopted[later40["item_id"]], "海上運賃_v1")
+        finally:
+            book.close()
+        self.assertEqual(self.database_snapshot(), before,
+            "GET/projection/export must preserve all items, correction events, memory, and fee-name history")
 
     def test_R3_19_legacy_amount_only_correction_keeps_old_adopted_name(self):
         self.new_case("editing")

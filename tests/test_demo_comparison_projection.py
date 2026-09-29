@@ -145,6 +145,122 @@ class ComparisonProjectionTests(unittest.TestCase):
                 quote("b", "B", fee_id="fee-one", equipment="40FT")]
         self.assertEqual(len(comparison_groups(rows)), 2)
 
+    def test_current_projection_merges_adopted_versions_and_preserves_three_quotes(self):
+        fee_id = "ac4edd3c-cea6-4319-ada3-219d952c2549"
+        items = []
+        for equipment, prices in (("20FT", ("1200", "1150", "1350")),
+                                  ("40FT", ("1900", "1850", "2050"))):
+            for index, (company, price) in enumerate(zip(("A初回", "B初回", "A次回"), prices)):
+                old = equipment == "40FT" and index < 2
+                item = quote(equipment + "-" + company, company,
+                    name="海上運賃" if old else "海上運賃_v1", fee_id=fee_id,
+                    equipment=equipment, price=price)
+                item.update(current_fee_name_version=1 if old else 2,
+                            current_fee_name_snapshot=item["current_fee_name"],
+                            effective_fee_name="海上運賃_v1", effective_fee_name_version=2,
+                            currency="USD")
+                items.append(item)
+        fees = [{"fee_id": fee_id, "display_name": "海上運賃_v1", "name_version": 2}]
+        before = deepcopy((items, fees))
+        # Input order cannot pick an old adopted name as the current row label.
+        for ordered in (items, list(reversed(items)), items[3:] + items[:3]):
+            with self.subTest(order=[item["item_id"] for item in ordered]):
+                projection = comparison_projection(ordered, fees)
+                self.assertEqual(len(projection["rows"]), 2)
+                by_equipment = {row["equipment"]: row for row in projection["rows"]}
+                for equipment, prices in (("20FT", ("1200", "1150", "1350")),
+                                          ("40FT", ("1900", "1850", "2050"))):
+                    row = by_equipment[equipment]
+                    self.assertEqual(row["display_name"], "海上運賃_v1（" + equipment + "）")
+                    self.assertEqual(row["fee_identity"], fee_id)
+                    self.assertEqual(row["rename_name_version"], 2)
+                    self.assertEqual(len(row["item_ids"]), 3)
+                    for company, price in zip(("A初回", "B初回", "A次回"), prices):
+                        self.assertEqual([(c["price"], c["currency"]) for c in row["cells"][company]],
+                                         [(price, "USD")])
+        documents = [{"document_id": "doc-" + company, "original_filename": company + ".xlsx",
+                      "sha256": "a" * 64, "state": "AVAILABLE"}
+                     for company in ("A初回", "B初回", "A次回")]
+        projection = comparison_projection(items, fees, documents)
+        book = load_workbook(BytesIO(workbook_bytes({"name": "Synthetic rename", "case_revision": 1},
+                             items, documents, fees=fees)), data_only=False)
+        try:
+            sheet = book["原価単価一覧表"]
+            self.assertEqual(sheet.max_row - 3, 2)
+            self.assertEqual([sheet.cell(3, n).value for n in range(2, 5)], projection["companies"])
+            for number, row in enumerate(projection["rows"], 4):
+                self.assertEqual(sheet.cell(number, 1).value, row["display_name"])
+                for column, company in enumerate(projection["companies"], 2):
+                    self.assertEqual(sheet.cell(number, column).value,
+                        "\n".join(c["price"] + " " + c["currency"] for c in row["cells"][company]))
+            detail_names = {row[0]: row[3] for row in list(book["明細と出典"].values)[1:]}
+            self.assertEqual(detail_names, {item["item_id"]: item["current_fee_name"] for item in items})
+        finally:
+            book.close()
+        self.assertEqual((items, fees), before, "Read-only projection/export must preserve adopted history and sources")
+
+    def test_same_identity_with_mixed_versions_respects_every_known_condition_conflict(self):
+        for field, conflict in (("transport_mode", "AIR"), ("equipment", "40FT"),
+                                ("billing_unit", "SHIPMENT"), ("charge_scope", "DESTINATION"),
+                                ("extra_terms", "SPECIAL")):
+            with self.subTest(field=field):
+                a = quote("a", "A", fee_id="stable", name="Old adopted")
+                b = quote("b", "B", fee_id="stable", name="Latest")
+                a.update(current_fee_name_version=1, effective_fee_name="Latest", effective_fee_name_version=2)
+                b.update(current_fee_name_version=2, effective_fee_name="Latest", effective_fee_name_version=2)
+                b["observation"]["context"][field] = conflict
+                self.assertEqual(partition([a, b]), {frozenset(("a",)), frozenset(("b",))})
+
+    def test_same_current_label_never_merges_distinct_fee_identities(self):
+        items = [quote("a", "A", name="Shared label", fee_id="identity-a"),
+                 quote("b", "B", name="Shared label", fee_id="identity-b")]
+        for item in items:
+            item.update(current_fee_name_version=1, effective_fee_name="Shared label", effective_fee_name_version=2)
+        fees = [{"fee_id": identity, "display_name": "Shared label", "name_version": 2}
+                for identity in ("identity-a", "identity-b")]
+        rows = comparison_projection(items, fees)["rows"]
+        self.assertEqual(len(rows), 2)
+        self.assertEqual({row["fee_identity"] for row in rows}, {"identity-a", "identity-b"})
+
+    def test_current_name_comes_from_catalog_or_effective_fields_not_suffix_order(self):
+        item = quote("old", "A", name="海上運賃_v999", fee_id="stable")
+        item.update(current_fee_name_version=1, effective_fee_name="海上運賃", effective_fee_name_version=2)
+        before = deepcopy(item)
+        for fees in ([], [{"fee_id": "stable", "display_name": "海上運賃", "name_version": 2}]):
+            with self.subTest(catalog=bool(fees)):
+                row = comparison_projection([item], fees)["rows"][0]
+                self.assertEqual(row["label"], "海上運賃")
+                self.assertEqual(row["rename_name_version"], 2)
+        # A catalog supplied for this read is authoritative even for a legacy
+        # item dictionary without joined effective-name fields.
+        legacy = {k: v for k, v in item.items() if not k.startswith("effective_")}
+        row = comparison_projection([legacy], [{"fee_id": "stable", "display_name": "最新統一名", "name_version": 3}])["rows"][0]
+        self.assertEqual(row["label"], "最新統一名")
+        self.assertEqual(row["rename_name_version"], 3)
+        self.assertEqual(item, before)
+
+    def test_catalog_name_and_version_override_stale_effective_metadata_together(self):
+        item = quote("a", "A", name="Adopted", fee_id="stable")
+        item.update(current_fee_name_version=1, effective_fee_name="Earlier", effective_fee_name_version=2)
+        row = comparison_projection([item], [{"fee_id": "stable", "display_name": "Current", "name_version": 3}])["rows"][0]
+        self.assertEqual((row["label"], row["rename_name_version"]), ("Current", 3))
+        # A partial legacy catalog must not pair its name with a different
+        # effective name's concurrency version.
+        row = comparison_projection([item], [{"fee_id": "stable", "display_name": "Current"}])["rows"][0]
+        self.assertEqual((row["label"], row["rename_name_version"]), ("Current", None))
+
+    def test_effective_metadata_fallback_uses_explicit_version_independent_of_order(self):
+        old = quote("a", "A", name="Adopted", fee_id="stable")
+        new = quote("b", "B", name="Adopted", fee_id="stable")
+        old.update(effective_fee_name="Earlier_v999", effective_fee_name_version=2)
+        new.update(effective_fee_name="Current", effective_fee_name_version=3)
+        before = deepcopy([old, new])
+        for items in permutations((old, new)):
+            row = comparison_projection(items)["rows"][0]
+            self.assertEqual((row["label"], row["rename_name_version"]), ("Current", 3))
+            self.assertEqual(set(row["item_ids"]), {"a", "b"})
+        self.assertEqual([old, new], before)
+
     def test_unknown_bridge_cannot_transitively_merge_incompatible_contexts(self):
         a, b, c = quote("a", "A"), quote("b", "B", equipment=None, ready=False), quote("c", "C", equipment="40FT")
         for order in permutations((a, b, c)):
