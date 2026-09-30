@@ -243,10 +243,20 @@ async function processDocument(document) {
       ["FAILED", "BLOCKED", "INTERRUPTED"].includes(task.status));
   });
 }
+function casePath(caseId = "") { return caseId ? "/cases/" + encodeURIComponent(caseId) : "/cases"; }
 function caseFromLocation() {
-  const match = /^#case=(.+)$/.exec(window.location.hash);
+  const match = /^\/cases\/([^/]+)$/.exec(window.location.pathname);
   if (!match) return "";
   try { return decodeURIComponent(match[1]); } catch { return ""; }
+}
+function canonicalizeInitialLocation() {
+  const legacy = /^#case=(.+)$/.exec(window.location.hash);
+  if (legacy) {
+    try { window.history.replaceState(null, "", casePath(decodeURIComponent(legacy[1]))); }
+    catch { window.history.replaceState(null, "", "/cases"); }
+  } else if (window.location.pathname === "/" || window.location.pathname === "/cases/") {
+    window.history.replaceState(null, "", "/cases");
+  }
 }
 function caseUpdatedAt(value) {
   if (!value) return "更新日時未取得";
@@ -287,13 +297,13 @@ function renderCaseView() {
 }
 async function navigateToCase(caseId) {
   if (state.busy) return;
-  window.history.pushState(null, "", window.location.pathname + window.location.search + (caseId ? "#case=" + encodeURIComponent(caseId) : ""));
-  await mutation(async () => { await loadCases(caseId); showNotice(""); });
+  window.history.pushState(null, "", casePath(caseId));
+  await mutation(async () => { showNotice(""); await loadCases(caseId); });
 }
 async function loadCases(preferred = null) {
   const result = await api("/api/cases");
   state.cases = Array.isArray(result) ? result : result.cases || [];
-  const selected = preferred === null ? caseFromLocation() : preferred;
+  const requested = preferred === null ? caseFromLocation() : preferred;
   const select = $("case-select");
   select.replaceChildren(node("option", "", "案件を選択してください"));
   select.options[0].value = "";
@@ -302,7 +312,11 @@ async function loadCases(preferred = null) {
     option.value = item.case_id;
     select.append(option);
   }
-  state.selectedCase = state.cases.some(item => item.case_id === selected) ? selected : "";
+  state.selectedCase = state.cases.some(item => item.case_id === requested) ? requested : "";
+  if (requested && !state.selectedCase) {
+    window.history.replaceState(null, "", "/cases");
+    showNotice("案件が見つかりません。案件一覧から選択してください。", true);
+  }
   select.value = state.selectedCase;
   renderCaseList();
   renderCaseView();
@@ -885,8 +899,17 @@ async function mutation(action, errorId) {
 $("new-case-button").addEventListener("click", () => { $("new-case-form").hidden = false; $("case-name").focus(); });
 $("cancel-case").addEventListener("click", () => { $("new-case-form").hidden = true; });
 $("case-search").addEventListener("input", renderCaseList);
-$("case-list-button").addEventListener("click", () => navigateToCase(""));
-window.addEventListener("popstate", () => { loadCases().catch(error => showNotice(errorText(error), true)); });
+for (const id of ["case-list-button", "sidebar-cases"]) {
+  $(id).addEventListener("click", event => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    navigateToCase("");
+  });
+}
+window.addEventListener("popstate", () => {
+  showNotice("");
+  loadCases().catch(error => showNotice(errorText(error), true));
+});
 $("case-select").addEventListener("change", async event => {
   state.pollDeadline = null;
   await navigateToCase(event.target.value);
@@ -898,7 +921,7 @@ $("new-case-form").addEventListener("submit", event => {
     if (!name) throw new Error("案件名を入力してください。");
     const result = await api("/api/cases", { method: "POST", body: JSON.stringify({ name }) });
     const created = result.case || result;
-    window.history.pushState(null, "", window.location.pathname + window.location.search + "#case=" + encodeURIComponent(created.case_id));
+    window.history.pushState(null, "", casePath(created.case_id));
     await loadCases(created.case_id);
     $("new-case-form").reset();
     $("new-case-form").hidden = true;
@@ -1165,6 +1188,7 @@ document.querySelectorAll(".close-dialog").forEach(element => element.addEventLi
 $("preview-dialog").addEventListener("close", () => $("preview-frame").removeAttribute("src"));
 
 (async function initialize() {
+  canonicalizeInitialLocation();
   setBusy(true);
   try {
     const results = await Promise.allSettled([api("/api/status"), loadCases()]);

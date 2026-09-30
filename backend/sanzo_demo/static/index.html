@@ -9,8 +9,15 @@
   <script src="/static/app.js" defer></script>
 </head>
 <body>
+  <div class="app-shell">
+  <aside class="sidebar" aria-label="メインナビゲーション">
+    <a class="sidebar-brand" href="/cases" aria-label="SANZO 案件一覧"><span class="brand-mark" aria-hidden="true">S</span><span class="sidebar-brand-name">SANZO<small>原価・単価一覧表</small></span></a>
+    <nav class="sidebar-nav" aria-label="ページ">
+      <a id="sidebar-cases" class="sidebar-link active" href="/cases" aria-label="案件一覧" aria-current="page"><span class="sidebar-link-mark" aria-hidden="true"></span><span class="sidebar-link-label">案件一覧</span></a>
+    </nav>
+  </aside>
+  <div class="app-content">
   <header class="topbar">
-    <a class="brand" href="/" aria-label="SANZO ホーム"><span class="brand-mark" aria-hidden="true">S</span><span>SANZO<small>原価・単価一覧表</small></span></a>
     <div class="header-context">見積比較ワークスペース</div>
     <span class="demo-label"><span class="status-dot"></span>ローカル商談 Demo</span>
   </header>
@@ -30,7 +37,7 @@
       </section>
     </section>
     <div id="case-detail-view" hidden>
-    <nav class="case-breadcrumb" aria-label="案件画面"><button id="case-list-button" type="button" class="text-button">← 案件一覧</button><span id="current-case-name"></span></nav>
+    <nav class="case-breadcrumb" aria-label="案件画面"><a id="case-list-button" href="/cases" class="text-button">案件一覧</a><span id="current-case-name"></span></nav>
     <div class="page-heading">
       <div class="page-heading-copy">
         <h1>原価・単価一覧表</h1>
@@ -117,6 +124,8 @@
     <footer class="page-footer"><span>SANZO · ローカル商談 Demo</span><span>名称の確認記録を再利用します。過去の価格は引き継ぎません。</span></footer>
     </div>
   </main>
+  </div>
+  </div>
 
   <dialog id="manual-dialog" class="form-dialog" aria-labelledby="manual-heading">
     <form id="manual-form">

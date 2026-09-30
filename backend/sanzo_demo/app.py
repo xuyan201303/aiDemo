@@ -16,7 +16,7 @@ from typing import Literal
 
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -352,6 +352,11 @@ def create_app(dsn: str, storage_dir: str | Path, *, tenant_id: str = "local-dem
 
     @app.get("/")
     def index():
+        return RedirectResponse("/cases", status_code=307)
+
+    @app.get("/cases")
+    @app.get("/cases/{case_id}")
+    def case_page(case_id: str | None = None):
         return FileResponse(STATIC / "index.html")
 
     app.mount("/static", StaticFiles(directory=STATIC, check_dir=False), name="static")

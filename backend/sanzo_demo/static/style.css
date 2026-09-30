@@ -29,13 +29,23 @@ a { color: inherit; }
 [hidden] { display: none !important; }
 
 /* Header and page hierarchy. */
-.topbar { height: 68px; background: #fff; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 24px; padding: 0 max(32px, calc((100vw - 1536px) / 2)); }
+.app-shell { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100vh; }
+.sidebar { position: sticky; top: 0; height: 100vh; background: #fdfdfb; border-right: 1px solid var(--line); padding: 24px 14px; }
+.sidebar-brand { display: flex; align-items: center; gap: 11px; min-height: 48px; padding: 0 10px; color: var(--ink); font-size: 18px; font-weight: 750; letter-spacing: .12em; line-height: 1.2; text-decoration: none; }
+.sidebar-brand-name small { display: block; margin-top: 5px; color: var(--muted); font-size: 10px; font-weight: 500; letter-spacing: .08em; }
+.sidebar-nav { margin-top: 44px; }
+.sidebar-link { display: flex; align-items: center; gap: 12px; min-height: 42px; padding: 9px 13px; border-radius: 9px; color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none; }
+.sidebar-link:hover { background: var(--surface-soft); color: var(--teal); }
+.sidebar-link.active { color: var(--teal-dark); background: #eaf0e9; }
+.sidebar-link-mark { width: 8px; height: 8px; border: 1.5px solid currentColor; border-radius: 2px; flex-shrink: 0; }
+.app-content { min-width: 0; }
+.topbar { height: 68px; background: #fff; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 24px; padding: 0 32px; }
 .brand { text-decoration: none; display: flex; align-items: center; gap: 11px; color: var(--ink); font-size: 20px; letter-spacing: .14em; font-weight: 750; line-height: 1.2; flex-shrink: 0; }
 .brand-mark { display: grid; place-items: center; width: 36px; height: 36px; background: var(--teal); color: #fff; border-radius: 10px; letter-spacing: 0; font-size: 23px; font-weight: 600; }
 .brand small { display: block; font-size: 10px; font-weight: 500; letter-spacing: .12em; margin-top: 5px; color: var(--muted); }
 .demo-label { margin-left: auto; border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; color: var(--muted); background: var(--surface); font-size: 11px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 .status-dot { width: 6px; height: 6px; display: inline-block; background: #a7864b; border-radius: 50%; }
-main { max-width: 1600px; margin: auto; padding: 32px 32px 24px; }
+main { width: 100%; min-width: 0; padding: 32px 32px 24px; }
 .page-heading { display: grid; grid-template-columns: minmax(0, 1fr) 240px; align-items: center; gap: 12px 32px; margin-bottom: 30px; }
 .page-heading-copy { grid-column: 1; grid-row: 1; }
 .page-heading > .workflow-guide { grid-column: 1; grid-row: 2; }
@@ -254,7 +264,7 @@ fieldset .form-grid { margin-bottom: 2px; }
 .refresh-item { margin-top: 10px; font-size: 13px; }
 
 /* Workbench composition. Only existing actions are used. */
-.header-context { border-left: 1px solid var(--line); padding-left: 24px; color: var(--muted); font-size: 12px; letter-spacing: .04em; line-height: 1.8; }
+.header-context { color: var(--muted); font-size: 12px; letter-spacing: .04em; line-height: 1.8; }
 .page-heading .subtle { font-size: 13px; letter-spacing: .025em; }
 .workflow-guide { list-style: none; display: flex; align-items: center; gap: 14px; margin: 0; padding: 0; font-size: 12px; color: var(--muted); }
 .workflow-guide li { display: flex; align-items: center; gap: 9px; white-space: nowrap; }
@@ -294,7 +304,7 @@ fieldset .form-grid { margin-bottom: 2px; }
 .review-decision .form-error { font-size: 12px; }
 
 /* Case index: the first screen of the local workflow. */
-.case-list-view { max-width: 1120px; margin: 0 auto; min-height: calc(100vh - 164px); }
+.case-list-view { max-width: 1280px; min-height: calc(100vh - 164px); }
 .case-list-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin: 14px 0 30px; }
 .case-list-heading h1 { margin-bottom: 8px; }
 .case-list-panel { overflow: hidden; }
@@ -334,6 +344,7 @@ fieldset .form-grid { margin-bottom: 2px; }
 .rename-impact ul { margin: 8px 0 0; padding-left: 18px; }
 
 @media (max-width: 1200px) {
+  .app-shell { grid-template-columns: 208px minmax(0, 1fr); }
   .workbench { grid-template-columns: 292px minmax(0, 1fr); gap: 20px; }
   main { padding: 28px 24px 24px; }
   .topbar { padding-inline: 24px; }
@@ -353,6 +364,12 @@ fieldset .form-grid { margin-bottom: 2px; }
   .member-price { margin-left: auto; }
 }
 @media (max-width: 800px) {
+  .app-shell { grid-template-columns: 68px minmax(0, 1fr); }
+  .sidebar { padding: 20px 8px; }
+  .sidebar-brand { padding: 0 8px; }
+  .sidebar-brand-name, .sidebar-link-label { display: none; }
+  .sidebar-link { justify-content: center; padding-inline: 0; }
+  .sidebar-link-mark { width: 12px; height: 12px; }
   .workbench { grid-template-columns: minmax(0, 1fr); }
   .page-heading { grid-template-columns: minmax(0, 1fr) 180px; gap: 12px 16px; }
   .workplace-scene { width: 180px; grid-row: 1; }
