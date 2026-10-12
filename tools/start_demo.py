@@ -46,7 +46,7 @@ def verified_sdk_wheel():
 
 
 BROWSER_URL = "http://127.0.0.1:8765"
-SOURCE_SUFFIXES = {".py", ".sql", ".html", ".js", ".css"}
+SOURCE_SUFFIXES = {".py", ".sql", ".html", ".js", ".css", ".svg"}
 
 
 class Runtime:

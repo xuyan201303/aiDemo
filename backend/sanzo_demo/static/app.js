@@ -469,20 +469,34 @@ function renderSnapshot() {
     statusLine.classList.toggle("task-complete", jobStatus === "AVAILABLE");
     statusLine.classList.toggle("task-error", ["FAILED", "BLOCKED", "INTERRUPTED"].includes(jobStatus));
     body.append(statusLine);
+    const readEvidence = task?.result_json?.read_evidence
+      || [...(task?.events || [])].reverse().find(event => event.metadata?.read_evidence)?.metadata.read_evidence;
+    const pdfTables = readEvidence?.sdk_identity?.public_outputs?.["document_sdk.pdf.analyze_pdf"]?.tables || [];
+    const limitedTable = readEvidence?.origin === "REAL_SDK"
+      && pdfTables.some(table => table.availability === "LIMITED_EVIDENCE");
+    if (limitedTable) body.append(node("p", "subtle", "表の構造は推定結果です。原文との確認が必要です。"));
+    const technical = node("details", "document-details");
+    technical.append(node("summary", "", "詳細を見る"));
+    if (limitedTable) technical.append(node("div", "task-detail", "SDK 表状態：LIMITED_EVIDENCE"));
+    if (limitedTable) {
+      const pdfOutput = readEvidence.sdk_identity.public_outputs["document_sdk.pdf.analyze_pdf"];
+      technical.append(node("div", "task-detail", "SDK 原件 SHA-256：" + pdfOutput.source_sha256));
+      for (const table of pdfTables.filter(table => table.availability === "LIMITED_EVIDENCE")) {
+        technical.append(node("div", "task-detail", "SDK 出典：" + table.page_number + "ページ / 表ID：" + table.table_id));
+      }
+    }
     if (currentReview && ["AVAILABLE", "REVIEW_REQUIRED"].includes(jobStatus)) {
       statusLine.textContent = currentReview.review_required ? "今回の確認が必要です" : "今回の確認済み";
       statusLine.classList.toggle("task-complete", !currentReview.review_required);
       const remaining = node("div", "current-document-review");
       for (const issue of currentReview.unresolved_issues || []) {
         const text = typeof issue === "string" ? issue : issue.message || [issue.code, issue.reason, issue.field, issue.limitation].filter(Boolean).join("：");
-        remaining.append(node("p", "subtle", text));
+        technical.append(node("div", "task-detail", text));
       }
       if (currentReview.review_required) remaining.append(node("p", "subtle", "比較表の「確認・修正」から対象明細の条件・原文を確認してください。未取得の必要情報は原件で確認し、資料自体にない場合は提供元に確認してください。読取で欠落した明細や未対応の資料問題は、明細の確認だけでは解消できません。"));
       body.append(remaining);
     }
 
-    const technical = node("details", "document-details");
-    technical.append(node("summary", "", "詳細を見る"));
     technical.append(node("div", "task-detail", "読取時の記録：" + taskStatusText(jobStatus) + "（当時の結果を保持）"));
     const successfulCalls = task?.result_json?.ai_metadata?.calls || [];
     if (successfulCalls.length && successfulCalls.every(call => call.execution_kind === "OPENAI_API" && call.http_status === 200)) {

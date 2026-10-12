@@ -12,6 +12,12 @@ PREFIX = POLICY + ":"
 LINE_CONDITIONS = ("equipment", "billing_unit", "charge_scope", "extra_terms")
 
 
+def verified_source(source):
+    """Readable cell text does not establish a limited table's authority."""
+    return (source.get("text_verification") == "VERIFIED"
+            and source.get("sdk_table", {}).get("table_availability", "AVAILABLE") == "AVAILABLE")
+
+
 def uses_fee_policy(source, input_kind):
     return (input_kind == "SDK_OBSERVED" and isinstance(source, dict)
             and source.get("origin") == "SDK_OBSERVED"
@@ -43,7 +49,7 @@ def signature(observation, source, input_kind):
         return None
     field = source.get("field_sources", {}).get("raw_label", {})
     unit = field.get("evidence_unit", {})
-    if (source.get("text_verification") != "VERIFIED"
+    if (not verified_source(source)
             or source.get("document_id") != observation.document_id
             or field.get("original_value") != observation.raw_label
             or field.get("value") != observation.raw_label

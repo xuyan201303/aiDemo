@@ -384,6 +384,10 @@ def create_app(dsn: str, storage_dir: str | Path, *, tenant_id: str = "local-dem
         return Response(data, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         headers={"Content-Disposition": f'attachment; filename="{prefix}sanzo-{case_id}.xlsx"'})
 
+    @app.get("/favicon.ico")
+    def favicon():
+        return FileResponse(STATIC / "favicon.svg", media_type="image/svg+xml")
+
     @app.get("/")
     def index():
         return RedirectResponse("/cases", status_code=307)

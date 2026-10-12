@@ -34,12 +34,36 @@ def complete_pdf_table():
     cells = [{'row_index': r, 'column_index': c, 'row_span': 1, 'column_span': 1,
               'text': value, 'availability': 'AVAILABLE'}
              for r, row in enumerate((headings, values)) for c, value in enumerate(row)]
-    return {'pages': [{'page_number': 2}], 'tables': [{'table_id': 'synthetic-table',
-        'page_number': 2, 'availability': 'AVAILABLE', 'row_count': 2,
+    return {'pages': [{'page_number': 2, 'table_ids': ['synthetic-table']}], 'tables': [{'table_id': 'synthetic-table',
+        'page_number': 2, 'source_identity': {'opaque_sdk_authority': True}, 'availability': 'AVAILABLE', 'row_count': 2,
         'column_count': len(headings), 'cells': cells}]}
 
 
 class PdfPublicBoundaryTests(unittest.TestCase):
+    def test_limited_table_preserves_readable_fields_and_limitations(self):
+        data = complete_pdf_table()
+        data['tables'][0].update(availability='LIMITED_EVIDENCE', limitations=['UNSPECIFIED_SDK_LIMIT'])
+        doc, reading = self.map(data)
+        lines, _ = structure_facts(doc, 'tenant', reading)
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(lines[0].source_ref['text_verification'], 'VERIFIED')
+        self.assertEqual(lines[0].source_ref['sdk_table']['table_availability'], 'LIMITED_EVIDENCE')
+        self.assertEqual(lines[0].source_ref['sdk_table']['limitations'], ['UNSPECIFIED_SDK_LIMIT'])
+        self.assertFalse(lines[0].observation.source_ready)
+        self.assertIsNone(memory_key(lines[0].observation, lines[0].source_ref, lines[0].input_kind))
+
+    def test_missing_or_conflicting_page_source_retains_exception(self):
+        for mode in ('missing', 'conflict'):
+            data = complete_pdf_table()
+            if mode == 'missing':
+                data['tables'][0]['source_identity'] = None
+            else:
+                data['pages'][0]['table_ids'] = []
+            _, reading = self.map(data)
+            self.assertFalse(reading.blocks)
+            self.assertEqual(reading.issues[0]['reason'],
+                             'PDF_TABLE_SOURCE_MISSING' if mode == 'missing' else 'PDF_TABLE_SOURCE_CONFLICT')
+
     def map(self, data):
         adapter = object.__new__(DocumentSdkAdapter)
         doc = {'document_id': 'synthetic-document', 'case_id': 'synthetic-case', 'sha256': 'a' * 64}
@@ -214,7 +238,7 @@ class RealFixedWheelTests(unittest.TestCase):
         samples = Path(__file__).resolve().parents[1] / 'demo_materials' / 'samples'
         expected = [('01_A社_初回見積.xlsx', '配送手数料', '8000'),
                     ('02_B社_初回見積.pdf', 'DELIVERY CHARGE', '9000.00'),
-                    ('03_A社_次回見積.xlsx', '配送手数料', '9500')]
+                    ('03_C社_次回見積.xlsx', '配送手数料', '9500')]
         if not all((samples / name).is_file() for name, _, _ in expected):
             self.skipTest('three fictional raw sample originals not mounted')
         for name, target, amount in expected:

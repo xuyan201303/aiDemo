@@ -32,7 +32,7 @@ DSN = os.environ.get("SANZO_TEST_DSN")
 SAMPLES = Path(__file__).resolve().parents[1] / "demo_materials/samples"
 FIRST = "01_A社_初回見積.xlsx"
 PDF = "02_B社_初回見積.pdf"
-SECOND = "03_A社_次回見積.xlsx"
+SECOND = "03_C社_次回見積.xlsx"
 # Test operator choices from whole SDK source cells; never adapter parsing rules.
 HUMAN_HEADER_CHOICES = {
     "company": "SANZO Demo Forwarder A（架空）",
@@ -240,7 +240,7 @@ class RealSDKPipelineTests(unittest.TestCase):
         self.assertTrue(self.read_evidence(task)["sdk_identity"]["public_outputs"])
         self.assertEqual(self.items(document), [])
 
-    def test_pdf_missing_document_roles_retains_limitations_and_allows_human_fee_memory(self):
+    def test_pdf_limited_evidence_allows_current_correction_without_fee_memory(self):
         document = self.upload(PDF)
         task = self.process(document)
         self.assertEqual(task["state"], "REVIEW_REQUIRED", task)
@@ -257,8 +257,8 @@ class RealSDKPipelineTests(unittest.TestCase):
             self.assertEqual(item["source_ref"]["locator_status"], "PAGE_ONLY")
             self.assertEqual(set(item["source_ref"]["locator"]), {"page_number"})
         confirmed = self.confirm(items[0], "HUMAN FEE NAME")
-        self.assertEqual(confirmed["memory_effect"], "ACTIVE")
-        self.assertEqual(self.slot_count(), 1)
+        self.assertEqual(confirmed["memory_effect"], "NOT_ELIGIBLE_CONTEXT_OR_SOURCE")
+        self.assertEqual(self.slot_count(), 0)
         with TestClient(create_app(DSN, self.storage, tenant_id=self.actor.tenant_id,
                                   integrations=self.runtime)) as client:
             preview = client.get(f"/api/documents/{document['document_id']}/preview", params={"page": 1})

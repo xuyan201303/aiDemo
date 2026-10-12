@@ -385,8 +385,17 @@ class DocumentSdkAdapter:
             if table_id in seen or page not in pages:
                 raise ValueError('REAL_SDK_TABLE_IDENTITY_INVALID')
             seen.add(table_id)
-            if table.get('availability') != 'AVAILABLE':
+            if table.get('availability') not in {'AVAILABLE', 'LIMITED_EVIDENCE'}:
                 self._issue(issues, 'PDF_TABLE_UNAVAILABLE', table_id=table_id, page_number=page)
+                continue
+            # The stable v4 API owns source authority and structural validation.
+            # Retain its opaque identity; do not replay private Canonical models.
+            if not table.get('source_identity'):
+                self._issue(issues, 'PDF_TABLE_SOURCE_MISSING', table_id=table_id)
+                continue
+            if not any(p['page_number'] == page and table_id in p.get('table_ids', [])
+                       for p in value['pages']):
+                self._issue(issues, 'PDF_TABLE_SOURCE_CONFLICT', table_id=table_id)
                 continue
             rows = defaultdict(dict)
             ambiguous = False
@@ -427,7 +436,9 @@ class DocumentSdkAdapter:
                               'locator': {'page_number': page},
                               'sdk_table': {'table_id': table_id, 'row_index': row_number, 'column_index': column,
                                             'row_span': cell['row_span'], 'column_span': cell['column_span'],
-                                            'availability': cell['availability']},
+                                            'availability': cell['availability'],
+                                            'table_availability': table['availability'],
+                                            'limitations': table.get('limitations', [])},
                               'header_binding': {'rule': VERSION, 'row_index': header_row,
                                                  'column_index': column, 'header_text': rows[header_row][column]['text']}}
                     blocks.append(self._block(document, source_id, cell['text'], source, role, record))

@@ -45,6 +45,10 @@ def classification_reason(line, decision):
         return None
     if decision.kind == DecisionKind.AI_REQUIRED:
         return decision.reason
+    if (decision.kind == DecisionKind.READING_REQUIRED
+            and decision.reason == "FEE_NAME_SOURCE_UNVERIFIED"
+            and source.get("sdk_table", {}).get("table_availability") == "LIMITED_EVIDENCE"):
+        return "PROVISIONAL_NAME_LIMITED_SDK_TABLE"
     if (decision.kind == DecisionKind.REVIEW_REQUIRED
             and decision.reason == "INCOMPLETE_CONTEXT"):
         return "PROVISIONAL_NAME_INCOMPLETE_CONTEXT"

@@ -186,7 +186,7 @@ class FeePolicyPostgresTests(unittest.TestCase):
             finally:book.close()
         self.assertEqual({i["item_id"]:i["current_price"] for i in self.items(first)},before)
 
-    def test_pdf_unknown_document_roles_can_learn_all_five_independently(self):
+    def test_pdf_limited_table_current_names_do_not_create_learning(self):
         doc=self.upload(helpers.PDF);task=self.process(doc)
         self.assertEqual(len(self.items(doc)),5);self.assertEqual(self.slot_count(),0)
         self.assertEqual(len(self.classifier.calls[0]["blocks"]),5)
@@ -194,8 +194,8 @@ class FeePolicyPostgresTests(unittest.TestCase):
             self.assertIsNone(item["observation"]["forwarder_id"])
             self.assertIsNone(item["observation"]["context"]["transport_mode"])
             result=self.confirm(item,"Human "+item["observation"]["raw_label"])
-            self.assertEqual(result["memory_effect"],"ACTIVE")
-        self.assertEqual(self.slot_count(origin="REAL_SDK"),5)
+            self.assertEqual(result["memory_effect"],"NOT_ELIGIBLE_CONTEXT_OR_SOURCE")
+        self.assertEqual(self.slot_count(origin="REAL_SDK"),0)
 
     def test_row_confirmation_unknown_document_columns_and_shared_five_row_export(self):
         first=self.upload(helpers.FIRST);self.process(first)
@@ -222,7 +222,8 @@ class FeePolicyPostgresTests(unittest.TestCase):
         before={i["item_id"]:i["current_price"] for i in items}
         result=RowConfirmationService(self.repo).confirm(self.actor,cmd)
         self.assertEqual(len(result["members"]),2)
-        self.assertTrue(all(m["memory_effect"]=="ACTIVE" for m in result["members"]))
+        self.assertEqual(sorted(m["memory_effect"] for m in result["members"]),
+                         ["ACTIVE", "NOT_ELIGIBLE_CONTEXT_OR_SOURCE"])
         self.assertEqual(RowConfirmationService(self.repo).confirm(self.actor,cmd),result)
         self.assertEqual({i["item_id"]:i["current_price"] for i in self.demo.list_items(self.actor,first["case_id"])},before)
 

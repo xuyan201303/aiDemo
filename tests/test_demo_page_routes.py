@@ -21,6 +21,16 @@ class PageRouteTests(unittest.TestCase):
         self.assertEqual(response.status_code, 307)
         self.assertEqual(response.headers["location"], "/cases")
 
+    def test_favicon_reuses_sanzo_mark_and_is_linked_from_page(self):
+        response = self.client.get("/favicon.ico")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["content-type"], "image/svg+xml")
+        self.assertEqual(response.content, self.client.get("/static/favicon.svg").content)
+        self.assertIn('fill="#365b4a"', response.text)
+        self.assertIn('>S</text>', response.text)
+        self.assertIn('rel="icon" type="image/svg+xml" href="/favicon.ico"',
+                      self.client.get("/cases").text)
+
     def test_case_list_is_directly_accessible(self):
         response = self.client.get("/cases")
         self.assertEqual(response.status_code, 200)

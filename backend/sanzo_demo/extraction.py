@@ -12,6 +12,7 @@ import json
 from uuid import uuid4
 
 from sanzo_core.domain import Context, Observation, SDKObservedLine, decimal_text
+from sanzo_core.fee_policy import verified_source
 
 CONDITIONS = ("transport_mode", "equipment", "billing_unit", "charge_scope", "extra_terms")
 UNKNOWN_MARKERS = frozenset({"unknown", "unspecified", "tbd", "不明", "未定", "未確認", "未知", "未确认", "待定", "未記載", "未記入"})
@@ -312,9 +313,9 @@ def materialize(document, tenant_id, reading: ReadResult, payload: dict):
                 document_id=document["document_id"], source_id=primary_id, forwarder_id=company,
                 raw_label=raw_label, unit_price=price, currency=currency,
                 context=Context(**context, ready=all(
-                    context[k] is not None and k in evidence and by_id[evidence[k]["source_block_id"]]["source_ref"].get("text_verification") == "VERIFIED"
+                    context[k] is not None and k in evidence and verified_source(by_id[evidence[k]["source_block_id"]]["source_ref"])
                     for k in CONDITIONS)),
-                source_ready=all(k in evidence and by_id[evidence[k]["source_block_id"]]["source_ref"].get("text_verification") == "VERIFIED"
+                source_ready=all(k in evidence and verified_source(by_id[evidence[k]["source_block_id"]]["source_ref"])
                     for k in ("raw_label", "raw_value", "currency", "company")))
             line = SDKObservedLine(observation=observation, source_ref=source, raw_value=raw_value,
                                    ai_suggested_name=None, input_kind="MOCK_SDK" if reading.origin == "MOCK_SDK" else "SDK_OBSERVED")

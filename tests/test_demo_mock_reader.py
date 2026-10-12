@@ -34,6 +34,13 @@ class MockSDKReaderTests(unittest.TestCase):
         return {"document_id": document_id, "case_id": "fixture-contract-only-no-business-case",
                 "sha256": sha256(sample.read_bytes()).hexdigest()}
 
+    def sample_path(self, entry):
+        # Locate the unchanged approved original by bytes, allowing a rename.
+        matches = [path for path in SAMPLES.iterdir() if path.is_file()
+                   and sha256(path.read_bytes()).hexdigest() == entry["sample_sha256"]]
+        self.assertEqual(len(matches), 1, entry["sample_sha256"])
+        return matches[0]
+
     def copied_reader(self):
         destination = self.directory / "fixtures"
         shutil.copytree(FIXTURES, destination)
@@ -55,7 +62,7 @@ class MockSDKReaderTests(unittest.TestCase):
     def test_all_three_original_hashes_load_only_raw_mock_fields(self):
         for entry in self.manifest["fixtures"]:
             with self.subTest(entry["sample_filename"]):
-                path = SAMPLES / entry["sample_filename"]
+                path = self.sample_path(entry)
                 reading = self.reader.read(path, self.document(path))
                 self.assertEqual(reading.origin, "MOCK_SDK")
                 self.assertEqual(reading.sdk_identity["real_sdk_execution"], "NOT_RUN")
@@ -188,7 +195,7 @@ class MockSDKReaderTests(unittest.TestCase):
         for entry in self.manifest["fixtures"]:
             if not entry["sample_filename"].endswith(".xlsx"):
                 continue
-            sample = SAMPLES / entry["sample_filename"]
+            sample = self.sample_path(entry)
             reading = self.reader.read(sample, self.document(sample))
             with sample.open("rb") as stream:
                 workbook = load_workbook(stream, read_only=True, data_only=False)

@@ -7,7 +7,7 @@ fee-name memory, and a human condition override cannot prove future reuse.
 from __future__ import annotations
 
 from sanzo_core.domain import Observation, canonical_json, memory_key
-from sanzo_core.fee_policy import LINE_CONDITIONS, uses_fee_policy
+from sanzo_core.fee_policy import LINE_CONDITIONS, uses_fee_policy, verified_source
 from .extraction import CONDITIONS, applicable_value
 
 
@@ -33,7 +33,7 @@ def _grounded_quote_source(item: dict) -> bool:
     or qualifies any additional learning record.
     """
     source, observation = item.get("source_ref") or {}, item.get("observation") or {}
-    if source.get("text_verification") != "VERIFIED":
+    if not verified_source(source):
         return False
     fields = source.get("field_sources") or {}
     label = fields.get("raw_label") or {}
