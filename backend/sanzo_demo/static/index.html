@@ -3,44 +3,134 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>SANZO | 原価・単価一覧表</title>
+  <title>SANZO｜物流見積比較</title>
   <link rel="stylesheet" href="/static/style.css">
   <script src="/static/workflow.js" defer></script>
   <script src="/static/app.js" defer></script>
 </head>
 <body>
+  <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><symbol id="icon-document" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M14 3v5h4M8 12h7M8 16h7"/></symbol><symbol id="icon-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></symbol><symbol id="icon-users" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 4v3"/></symbol><symbol id="icon-settings" viewBox="0 0 24 24"><path d="m9 3-.8 2.3-2.3 1L3.5 6 2 9l1.7 1.7v2.6L2 15l1.5 3 2.4-.3 2.3 1L9 21h4l.8-2.3 2.3-1 2.4.3 1.5-3-1.7-1.7v-2.6L20 9l-1.5-3-2.4.3-2.3-1L13 3Z"/><circle cx="11" cy="12" r="3"/></symbol><symbol id="icon-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 8.5a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 16h.01"/></symbol><symbol id="icon-message" viewBox="0 0 24 24"><path d="M21 14a3 3 0 0 1-3 3h-6l-5 4v-4H5a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3h13a3 3 0 0 1 3 3Z"/><path d="M7 10h.01M12 10h.01M17 10h.01"/></symbol><symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 6 6"/></symbol><symbol id="icon-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/></symbol><symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="17" rx="2"/><path d="M7 2v6M17 2v6M3 11h18M8 15h.01M12 15h.01M16 15h.01M8 18h.01M12 18h.01"/></symbol><symbol id="icon-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol><symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol><symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol><symbol id="icon-sort" viewBox="0 0 24 24"><path d="M7 4v16m-3-3 3 3 3-3M17 20V4m-3 3 3-3 3 3"/></symbol><symbol id="icon-cube" viewBox="0 0 24 24"><path d="m12 2 10 5v12l-10 5L2 19V7Zm0 10v12M2 7l10 5 10-5M7 4.5l10 5"/></symbol><symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol><symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol></defs></svg>
   <div class="app-shell">
   <aside class="sidebar" aria-label="メインナビゲーション">
-    <a class="sidebar-brand" href="/cases" aria-label="SANZO 案件一覧"><span class="brand-mark" aria-hidden="true">S</span><span class="sidebar-brand-name">SANZO<small>原価・単価一覧表</small></span></a>
+    <a class="sidebar-brand" href="/cases" aria-label="SANZO｜物流見積比較 — 見積比較一覧"><span class="brand-mark" aria-hidden="true">S</span><span class="sidebar-brand-name">SANZO<small>物流見積比較</small></span></a>
     <nav class="sidebar-nav" aria-label="ページ">
-      <a id="sidebar-cases" class="sidebar-link active" href="/cases" aria-label="案件一覧" aria-current="page"><span class="sidebar-link-mark" aria-hidden="true"></span><span class="sidebar-link-label">案件一覧</span></a>
+      <span class="sidebar-link unavailable" aria-disabled="true" title="このデモでは未提供"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-home"></use></svg><span class="sidebar-link-label">ダッシュボード</span></span>
+      <a id="sidebar-cases" class="sidebar-link active" href="/cases" aria-label="見積比較一覧" aria-current="page"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-document"></use></svg><span class="sidebar-link-label">見積比較一覧</span></a>
+      <span class="sidebar-link unavailable" aria-disabled="true" title="このデモでは未提供"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-users"></use></svg><span class="sidebar-link-label">ユーザー管理</span></span>
+      <span class="sidebar-link unavailable" aria-disabled="true" title="このデモでは未提供"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-settings"></use></svg><span class="sidebar-link-label">設定</span></span>
     </nav>
+    <div class="sidebar-support"><p>サポート</p><span class="sidebar-link unavailable" aria-disabled="true" title="このデモでは未提供"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-help"></use></svg><span class="sidebar-link-label">ヘルプ</span></span><span class="sidebar-link unavailable" aria-disabled="true" title="このデモでは未提供"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-message"></use></svg><span class="sidebar-link-label">お問い合わせ</span></span></div>
+    <div class="sidebar-footer"><div class="sidebar-message"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-cube"></use></svg><p>物流の見積比較を<br>もっとシンプルに<strong>SANZO</strong></p></div><small>© 2026 SANZO</small></div>
   </aside>
   <div class="app-content">
   <header class="topbar">
     <div class="header-context">見積比較ワークスペース</div>
     <span class="demo-label"><span class="status-dot"></span>ローカル商談 Demo</span>
+    <span class="local-account"><span class="account-avatar" aria-hidden="true"></span>ローカルユーザー</span>
   </header>
   <main>
     <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
     <section id="case-list-view" class="case-list-view" aria-labelledby="case-list-heading">
-      <div class="case-list-heading"><div><span class="eyebrow">CASES</span><h1 id="case-list-heading">案件一覧</h1><p class="subtle">見積資料と比較結果を案件ごとに確認できます。</p></div><button id="new-case-button" class="button primary" type="button">＋ 新しい案件</button></div>
+      <div class="case-list-heading">
+        <div class="case-list-heading-copy"><span class="eyebrow">COMPARISONS</span><h1 id="case-list-heading">見積比較一覧</h1><p class="subtle">各社の見積資料をまとめて、費用・条件を比較できます。</p></div>
+        <div class="logistics-hero" aria-hidden="true"><svg class="logistics-scene" xmlns="http://www.w3.org/2000/svg" width="640" height="150" viewBox="0 0 640 150" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="ground" x1="307" y1="116" x2="307" y2="151" gradientUnits="userSpaceOnUse"><stop stop-color="#E2ECE7" stop-opacity=".9"/><stop offset="1" stop-color="#F5F8F6" stop-opacity="0"/></linearGradient>
+    <linearGradient id="distance" x1="332" y1="5" x2="332" y2="129" gradientUnits="userSpaceOnUse"><stop stop-color="#D9E6E0" stop-opacity=".38"/><stop offset="1" stop-color="#D9E6E0" stop-opacity=".68"/></linearGradient>
+    <linearGradient id="container" x1="237" y1="67" x2="323" y2="122" gradientUnits="userSpaceOnUse"><stop stop-color="#B8D0C7"/><stop offset="1" stop-color="#D0DED7"/></linearGradient>
+    <linearGradient id="fade" x1="0" y1="0" x2="640" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="white" stop-opacity="0"/><stop offset=".17" stop-color="white" stop-opacity=".75"/><stop offset=".33" stop-color="white"/><stop offset=".88" stop-color="white"/><stop offset="1" stop-color="white" stop-opacity="0"/></linearGradient>
+    <mask id="sceneFade"><rect width="640" height="150" fill="url(#fade)"/></mask>
+    <pattern id="ribs" width="7" height="38" patternUnits="userSpaceOnUse"><path d="M1 .5v37" stroke="#90B2A4" stroke-width=".75" opacity=".35"/><path d="M2 .5v37" stroke="white" stroke-width=".6" opacity=".28"/></pattern>
+  </defs>
+  <g mask="url(#sceneFade)">
+    <path d="m28 126 56-12 24-19 37-10 42-1 13-13 35-5 37 18 56 12 56-13 58 12 63-7 29 26 69 7 32 17H22Z" fill="#EAF0EC"/>
+    <path d="m118 99 10-3V71l21-7 28 6v52h-59Zm83-34 11-4V43l37-12 35 10v75h-83Zm144 11V42l23-8 16 6v79h-39Zm127-11 10-4V39l11-5 12 4v89h-33Zm60 25V64l18-5 23 7v61h-41Z" fill="url(#distance)"/>
+    <path d="m205 43 44-14 37 12-37 14Z" fill="#E4EDE8"/><path d="M249 54v54m-34-54v30m10-33v34m11-37v38m113-45v52m10-55v56m121-49v63m68-42v49" stroke="#F6F9F7" opacity=".5"/>
+    <path d="m0 131 140-8 112 6 111-10 192 7 85 11-33 13H0Z" fill="url(#ground)"/>
+    <g opacity=".43" stroke="#ABC7BA" stroke-linecap="square">
+      <path d="M453 114V14m7 100V14M393 31l102-16v7L393 37v-6Z" stroke-width="3"/>
+      <path d="m397 31 21-10 35-4 43-3m-68 14v30m3-29v29m-33-26V20m0 0 98-8M483 17V6m-87 15 37 8m-1-13 25 10m-2-14 32 9" stroke-width="1.5"/>
+      <path d="M420 58h20m-13 0 3 7 4-7M450 69h14m-14 2 11 11-11 10 11 12m-1-22-9 10 9 12" stroke-width="1.4"/>
+      <path d="M482 115V32m5 83V31m-17 85h28m-15-27 3 10-3 10m-2-26h7" stroke-width="2"/>
+    </g>
+    <g opacity=".83">
+      <path d="m166 81 25-8v58l-25-4Z" fill="#CADBD4"/>
+      <path d="m191 73 29 6v52h-29Z" fill="#BBD0C6"/>
+      <path d="m166 81 25-8 29 6-26 9Z" fill="#DDE8E2"/>
+      <path d="M194 90v36m6-37v37m6-36v36m6-35v35" stroke="#92B4A5" stroke-width="1" opacity=".3"/>
+      <path d="m230 91 42-14 81 12v42h-81l-42-5Z" fill="url(#container)"/>
+      <path d="m230 91 42-14v54l-42-5Z" fill="#B4CDC1"/>
+      <path d="m230 91 42-14 81 12-39 15Z" fill="#D4E3DB"/>
+      <path d="m272 103 81-14v42h-81Z" fill="#BDD3C7"/>
+      <path d="M279 103v25m7-26v26m7-27v27m7-29v29m7-30v30m7-31v31m7-32v32m7-33v33m7-34v34m7-35v35m7-36v36M236 94v30m7-32v33m7-35v35m7-37v38m7-40v41" stroke="#89AF9D" stroke-width=".9" opacity=".4"/>
+      <path d="m272 58 46-17 73 12v40l-43 16-76-12Z" fill="#C4D8CE"/>
+      <path d="m272 58 46-17v51l-46 17Z" fill="#AECCC0"/>
+      <path d="m272 58 46-17 73 12-43 17Z" fill="#D4E3DC"/>
+      <path d="m318 42 73 12v40l-73-11Z" fill="#C7DAD1"/>
+      <path d="m322 46 0 34m6-33v34m6-33v34m6-33v34m6-33v34m6-33v34m6-33v34m6-33v34m6-33v34m6-33v34m6-33v34M277 60v42m7-45v43m7-46v43m7-46v44m7-47v44m7-46v43" stroke="#8BAF9E" stroke-width=".85" opacity=".45"/>
+      <path d="m351 107 38-14 59 8v29h-59l-38-4Z" fill="#B8CDC2"/>
+      <path d="m351 107 38-14v36l-38-3Z" fill="#ABC7B8"/>
+      <path d="m351 107 38-14 59 8-36 12Z" fill="#D3E1D9"/>
+      <path d="M394 106v22m6-21v21m6-20v20m6-19v19m6-21v21m6-23v23m6-24v24m6-25v25m6-26v26" stroke="#83A995" stroke-width=".9" opacity=".35"/>
+      <path d="m473 110 24-8 43 6v25h-43l-24-3Z" fill="#CFDED5"/>
+      <path d="m473 110 24-8v31l-24-3Z" fill="#B9D0C1"/>
+      <path d="m473 110 24-8 43 6-24 8Z" fill="#E2EAE5"/>
+      <path d="M504 111v20m6-19v19m6-18v18m6-19v19m6-20v20m6-21v21" stroke="#A8C3B1" stroke-width=".75"/>
+    </g>
+    <g opacity=".72">
+      <ellipse cx="403" cy="140" rx="49" ry="4" fill="#A6BCAE" opacity=".24"/>
+      <path d="M390 104h51v31h-51Z" fill="#ACC8B9"/><path d="m390 104 7-5 49 2-5 3Z" fill="#C8DAD0"/>
+      <path d="m441 104 5-3v29l-5 5Z" fill="#99B9A7"/>
+      <path d="M389 111h-15l-11 9-3 15h29v-24Z" fill="#DDE8E0"/>
+      <path d="m367 121 10-8h8v11h-19Z" fill="#97B5A5"/>
+      <path d="m371 116-4 8h8l4-11h-2Z" fill="#BFD2C6"/>
+      <path d="M359 135h84v4h-84Z" fill="#8BAB98"/>
+      <path d="M362 131h6v3h-6Zm24-3h3v8h-3Z" fill="#F0F4EE"/>
+      <path d="M380 129h4" stroke="#8EAE9B" stroke-width="1.1"/>
+      <path d="M397 107v24m7-24v24m7-24v24m7-24v24m7-24v24m7-24v24" stroke="#8DAF9D" stroke-width=".85" opacity=".45"/>
+      <circle cx="373" cy="137" r="6" fill="#779785"/><circle cx="373" cy="137" r="2.8" fill="#D4E1D7"/>
+      <circle cx="422" cy="137" r="6" fill="#779785"/><circle cx="422" cy="137" r="2.8" fill="#D4E1D7"/>
+      <circle cx="435" cy="137" r="5.6" fill="#779785"/><circle cx="435" cy="137" r="2.6" fill="#D4E1D7"/>
+    </g>
+    <path d="M102 130h154m217 5h96M299 144h71m80-2h67" stroke="#A7C1B0" stroke-width=".7" opacity=".24"/>
+    <path d="M552 129V87m-4 42h8m-6-42h5" stroke="#BCD0C3" stroke-width="2" opacity=".48"/>
+  </g>
+</svg>
+<p>物流の<br>最適な選択を、<br>すべての企業に。<span></span></p></div>
+      </div>
+      <div class="case-kpis" aria-label="見積比較の概要">
+        <button class="case-kpi total" data-case-filter="all" type="button" aria-label="比較件数で絞り込み"><span class="kpi-icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-document"></use></svg></span><span class="kpi-copy"><span>比較件数</span><strong data-kpi-count="all">0</strong><span class="kpi-unit">件</span></span><svg class="ui-icon kpi-chevron" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-chevron"></use></svg></button>
+        <button class="case-kpi review" data-case-filter="確認必要" type="button" aria-label="要確認で絞り込み"><span class="kpi-icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-alert"></use></svg></span><span class="kpi-copy"><span>要確認</span><strong data-kpi-count="確認必要">0</strong><span class="kpi-unit">件</span></span><svg class="ui-icon kpi-chevron" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-chevron"></use></svg></button>
+        <button class="case-kpi today" data-case-filter="today" type="button" aria-label="本日更新で絞り込み"><span class="kpi-icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-calendar"></use></svg></span><span class="kpi-copy"><span>本日更新</span><strong data-kpi-count="today">0</strong><span class="kpi-unit">件</span></span><svg class="ui-icon kpi-chevron" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-chevron"></use></svg></button>
+        <button class="case-kpi done" data-case-filter="確認済み" type="button" aria-label="確認済みで絞り込み"><span class="kpi-icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-check"></use></svg></span><span class="kpi-copy"><span>確認済み</span><strong data-kpi-count="確認済み">0</strong><span class="kpi-unit">件</span></span><svg class="ui-icon kpi-chevron" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-chevron"></use></svg></button>
+      </div>
       <form id="new-case-form" class="inline-form case-create-form" hidden>
-        <label>案件名<input id="case-name" name="name" maxlength="200" required autocomplete="off" placeholder="案件名を入力"></label>
-        <button class="button primary" type="submit">案件を作成</button>
+        <label>比較名<input id="case-name" name="name" maxlength="200" required autocomplete="off" placeholder="例：上海 → 東京／2026年10月出荷分"></label>
+        <button class="button primary" type="submit">原価単価一覧表を作成</button>
         <button id="cancel-case" class="button quiet" type="button">キャンセル</button>
       </form>
-      <section class="panel case-list-panel" aria-label="保存された案件">
-        <div class="case-list-controls"><label for="case-search">案件名で検索<input id="case-search" type="search" placeholder="案件名で検索" autocomplete="off"></label><span id="case-list-count" class="subtle"></span></div>
-        <div id="case-list" class="case-list"></div>
-        <p id="case-list-empty" class="empty-inline" hidden>案件がありません。「新しい案件」から作成してください。</p>
+      <div class="case-list-controls" aria-label="原価単価一覧表の検索と絞り込み">
+        <label class="case-search-field" for="case-search"><span class="visually-hidden">比較名で検索</span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-search"></use></svg><input id="case-search" type="search" placeholder="比較名で検索" autocomplete="off"><button id="case-search-clear" type="button" aria-label="検索をクリア"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-close"></use></svg></button></label>
+        <div class="case-filters" aria-label="ステータスで絞り込み">
+          <button type="button" class="case-filter active" data-case-filter="all" aria-pressed="true">すべて <span data-filter-count="all">(0)</span></button>
+          <button type="button" class="case-filter" data-case-filter="確認必要" aria-pressed="false">要確認 <span data-filter-count="確認必要">(0)</span></button>
+          <button type="button" class="case-filter" data-case-filter="確認済み" aria-pressed="false">確認済み <span data-filter-count="確認済み">(0)</span></button>
+          <button type="button" class="case-filter" data-case-filter="資料なし" aria-pressed="false">見積資料未登録 <span data-filter-count="資料なし">(0)</span></button>
+        </div>
+        <label class="case-sort-label" for="case-sort"><span class="visually-hidden">原価単価一覧表の並び順</span><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-sort"></use></svg><select id="case-sort"><option value="newest">更新日が新しい順</option><option value="oldest">更新日が古い順</option><option value="name">比較名順</option></select></label>
+        <button id="new-case-button" class="button primary" type="button"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-plus"></use></svg>原価単価一覧表を作成</button>
+      </div>
+      <section class="panel case-list-panel" aria-label="保存された原価単価一覧表">
+        <div class="case-table-scroll"><table class="case-table"><thead><tr><th class="case-checkbox-cell"><input id="case-select-page" type="checkbox" aria-label="表示中の原価単価一覧表を選択"></th><th scope="col">比較名</th><th scope="col">取込ファイル数</th><th scope="col">要確認項目</th><th scope="col">ステータス</th><th scope="col">最終更新</th><th scope="col">操作</th></tr></thead><tbody id="case-list" class="case-list"></tbody></table></div>
+        <p id="case-list-empty" class="empty-inline" hidden>原価単価一覧表がありません。「原価単価一覧表を作成」から作成してください。</p>
+        <footer class="case-list-footer"><span id="case-list-count" aria-live="polite"></span><nav id="case-pagination" aria-label="見積比較一覧のページ"></nav></footer>
       </section>
     </section>
     <div id="case-detail-view" hidden>
-    <nav class="case-breadcrumb" aria-label="案件画面"><a id="case-list-button" href="/cases" class="text-button">案件一覧</a><span id="current-case-name"></span></nav>
+    <nav class="case-breadcrumb" aria-label="見積比較画面"><a id="case-list-button" href="/cases" class="text-button">見積比較一覧</a><span id="current-case-name"></span></nav>
     <div class="page-heading">
       <div class="page-heading-copy">
-        <h1>原価・単価一覧表</h1>
+        <h1>見積比較表</h1>
         <p class="subtle">複数社の見積を、ひとつの基準で比較。</p>
       </div>
       <ol class="workflow-guide" aria-label="操作の流れ"><li><span>01</span> 見積取込</li><li><span>02</span> 費目確認</li><li><span>03</span> 一覧表完成</li></ol>
@@ -76,9 +166,9 @@
     </div>
     <div class="workbench">
       <section class="workspace panel" aria-labelledby="case-heading">
-        <div class="section-title"><h2 id="case-heading">案件と資料</h2></div>
+        <div class="section-title"><h2 id="case-heading">見積比較と資料</h2></div>
         <div class="case-toolbar">
-          <label class="case-select-label">案件<select id="case-select" aria-label="案件を選択"><option value="">案件を選択してください</option></select></label>
+          <label class="case-select-label">見積比較<select id="case-select" aria-label="見積比較を選択"><option value="">見積比較を選択してください</option></select></label>
           <div id="case-meta" class="case-meta"></div>
         </div>
         <form id="upload-form" class="upload-zone">
@@ -91,8 +181,8 @@
         <div id="ai-pause" class="notice error" role="status" hidden></div>
         <div id="upload-progress" class="subtle" role="status"></div>
         <div id="documents" class="documents"></div>
-        <p id="no-documents" class="empty-inline">案件を作成し、見積資料を追加してください。</p>
-        <p class="workspace-instruction">確認した費目名は、原文と適用条件に応じて次回の案件に反映されます。</p>
+        <p id="no-documents" class="empty-inline">原価単価一覧表を作成し、見積資料を追加してください。</p>
+        <p class="workspace-instruction">確認した費目名は、原文と適用条件に応じて次回の原価単価一覧表に反映されます。</p>
         <section id="connection-panel" class="connection-panel" aria-label="接続状態"><div class="connection-title">接続状態を確認しています…</div></section>
       </section>
 
@@ -101,7 +191,7 @@
           <div class="comparison-title"><h2 id="comparison-heading">比較結果</h2><p class="subtle">費目を統一して、フォワーダーごとの差を確認できます</p></div>
           <div class="comparison-actions"><span id="item-count" class="count-pill">0 明細</span><button id="export-button" class="button secondary" type="button" disabled>草稿 Excel ダウンロード ↓</button></div>
         </div>
-        <div class="comparison-toolbar"><p class="subtle">原価・単価一覧表</p><div class="table-legend"><span>✓ 確認済み</span><span>● AI仮判定</span><span>⚠ 確認必要</span><span>— 見積なし</span></div></div>
+        <div class="comparison-toolbar"><p class="subtle">見積比較表</p><div class="table-legend"><span>✓ 確認済み</span><span>● AI仮判定</span><span>⚠ 要確認</span><span>— 見積なし</span></div></div>
         <div id="comparison-table" class="table-scroll"></div>
         <div id="empty-comparison" class="empty-state">
           <div class="preview-caption"><span>完成イメージ</span><span>以下は表示例です。実際の見積金額ではありません。</span></div>
@@ -185,7 +275,7 @@
         <p class="subtle" id="edit-member-count"></p>
         <div id="edit-member-details"></div>
         <label class="checkbox-label reconfirm"><input id="replace-mapping" type="checkbox"><span>撤回済みの対応を、この費目で明示的に再開する</span></label>
-        <details class="revoke-details"><summary>個別の原文表記の確認記録を撤回する</summary><label>対象の明細<select id="revoke-member"></select></label><p class="subtle">現在の案件の表示は残します。次の案件には自動適用しません。</p><label>撤回理由<input id="revoke-reason" maxlength="500" placeholder="撤回する理由"></label><button id="revoke-button" type="button" class="button danger">確認記録を撤回</button></details>
+        <details class="revoke-details"><summary>個別の原文表記の確認記録を撤回する</summary><label>対象の明細<select id="revoke-member"></select></label><p class="subtle">現在の見積比較の表示は残します。次の見積比較には自動適用しません。</p><label>撤回理由<input id="revoke-reason" maxlength="500" placeholder="撤回する理由"></label><button id="revoke-button" type="button" class="button danger">確認記録を撤回</button></details>
       </details>
     </form>
   </dialog>
@@ -206,12 +296,29 @@
     <form id="condition-form" novalidate>
       <div class="dialog-heading"><div><span class="eyebrow">ITEM CONDITIONS</span><h2 id="condition-heading">適用条件を修正</h2></div><button type="button" class="icon-button close-dialog" aria-label="閉じる">×</button></div>
       <div id="condition-summary" class="correction-summary"></div>
-      <label class="field-label">修正する条件<select id="condition-field"><option value="equipment">機材・コンテナ</option><option value="billing_unit">課金単位</option></select></label>
+      <label class="field-label">確認する条件<select id="condition-field"><option value="equipment">機材・コンテナ</option><option value="billing_unit">課金単位</option><option value="charge_scope">費用の適用範囲</option><option value="extra_terms">追加条件</option></select></label>
       <dl class="condition-trace"><dt>原文からの読取値</dt><dd id="condition-original"></dd><dt>人工確認値</dt><dd id="condition-human"></dd><dt>現在の有効値</dt><dd id="condition-effective"></dd></dl>
-      <label class="field-label">今回の人工確認値<input id="condition-value" maxlength="100" autocomplete="off" placeholder="例：40FT / コンテナ"></label>
-      <p class="subtle">原文からの読取値を残し、今回の明細で使う条件を確認します。次回の版式読取への自動適用は行いません。</p>
+      <label class="field-label">操作<select id="condition-intent"><option value="confirm">現在の値を確認する（値を変更しない）</option><option value="change">原文に基づいて値を修正する</option></select></label>
+      <label class="field-label">今回の人工確認値<input id="condition-value" maxlength="1024" autocomplete="off" placeholder="例：40FT / コンテナ" readonly></label>
+      <label id="condition-evidence-field" class="field-label">確認した原文の位置・根拠<textarea id="condition-evidence" maxlength="2000" rows="2" placeholder="例：見積明細 C13 の40FTを確認"></textarea></label>
+      <button id="condition-preview" class="text-button" type="button">対象明細の原文を開く ↗</button>
+      <p id="condition-help" class="subtle">原文を確認し、この明細の選択した値だけを確認します。未取得の値は確認できません。</p>
       <div id="condition-error" class="form-error" role="alert" hidden></div>
       <div class="dialog-actions"><button type="button" class="button quiet close-dialog">キャンセル</button><button id="condition-save" type="submit" class="button primary">条件を保存</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="source-review-dialog" class="form-dialog" aria-labelledby="source-review-heading">
+    <form id="source-review-form" novalidate>
+      <div class="dialog-heading"><div><span class="eyebrow">SOURCE REVIEW</span><h2 id="source-review-heading">この明細の原文を照合</h2></div><button type="button" class="icon-button close-dialog" aria-label="閉じる">×</button></div>
+      <div id="source-review-summary" class="correction-summary"></div>
+      <p id="source-review-position" class="subtle"></p>
+      <button id="source-review-preview" class="text-button" type="button">原文を開く ↗</button>
+      <label class="field-label">原文内で対応する明細を特定した根拠<textarea id="source-review-evidence" rows="3" maxlength="2000" placeholder="ページ・表・原文表記・金額など、ほかの明細と区別できる根拠"></textarea></label>
+      <label class="checkbox-label"><input id="source-review-ack" type="checkbox"><span>この原文表記・今回の単価・通貨が同じ明細に対応することを原件で確認しました。</span></label>
+      <p class="subtle">人工照合の記録を保存します。SDKの読取結果や位置情報は変更しません。対応する明細を特定できない場合は保存せず、資料の提供元に確認してください。</p>
+      <div id="source-review-error" class="form-error" role="alert" hidden></div>
+      <div class="dialog-actions"><button type="button" class="button quiet close-dialog">キャンセル</button><button id="source-review-save" type="submit" class="button primary">この明細の照合を保存</button></div>
     </form>
   </dialog>
 
@@ -225,6 +332,21 @@
       <p class="subtle">単価・通貨・適用条件・原文・過去の確認履歴・出力済みの Excel は変更されません。</p>
       <div id="shared-rename-error" class="form-error" role="alert" hidden></div>
       <div class="dialog-actions"><button type="button" class="button quiet close-dialog">キャンセル</button><button id="shared-rename-save" type="submit" class="button primary">共通名称を変更</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="document-review-dialog" class="form-dialog" aria-labelledby="document-review-heading">
+    <form id="document-review-form" novalidate>
+      <div class="dialog-heading"><div><span class="eyebrow">DOCUMENT REVIEW</span><h2 id="document-review-heading">資料全体と明細を照合</h2></div><button type="button" class="icon-button close-dialog" aria-label="閉じる">×</button></div>
+      <p id="document-review-summary"></p>
+      <div id="document-review-reasons" class="subtle"></div>
+      <button id="document-review-preview" class="text-button" type="button">資料の原文を開く ↗</button>
+      <p class="subtle">先に各明細の費目・必要条件・原文の照合を完了してください。読取時の注意事項は履歴として残します。原文に未登録の明細がある場合や、必要情報が不足している場合は確認を完了できません。</p>
+      <label class="field-label">原文で確認した見積明細数<input id="document-review-count" inputmode="numeric" type="number" min="1" max="10000"></label>
+      <label class="field-label">明細の過不足・重複と対応関係を確認した根拠<textarea id="document-review-evidence" rows="3" maxlength="2000" placeholder="原文のページ・表・各明細の対応と件数を確認した根拠"></textarea></label>
+      <label class="checkbox-label"><input id="document-review-ack" type="checkbox"><span>原文全体と表示中の各明細を照合し、過不足・重複がないことを確認しました。</span></label>
+      <div id="document-review-error" class="form-error" role="alert" hidden></div>
+      <div class="dialog-actions"><button type="button" class="button quiet close-dialog">キャンセル</button><button id="document-review-save" type="submit" class="button primary">この資料の照合を保存</button></div>
     </form>
   </dialog>
 

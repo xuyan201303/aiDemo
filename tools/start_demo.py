@@ -32,8 +32,8 @@ PG_VOLUME = PREFIX + "-postgres"
 UPLOAD_VOLUME = PREFIX + "-uploads"
 PG_IMAGE = "postgres:16"
 PYTHON_IMAGE = "python:3.12.13-slim"
-SDK_WHEEL = Path("/Users/kyoen/Projects/sdk/document_processing_sdk-1.8.0-py3-none-any.whl")
-SDK_WHEEL_SHA256 = "d791e0602ef138f50a065cd4cc5d3dca801226822b74328230f2faa2c0c75666"
+SDK_WHEEL = PROJECT / "document_processing_sdk-1.8.0-py3-none-any.whl"
+SDK_WHEEL_SHA256 = "781161e4af3b0b45a1ca8a7745e774e1a2362eb01bcc30956e51619514fcc4e0"
 
 
 def verified_sdk_wheel():

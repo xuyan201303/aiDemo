@@ -191,9 +191,20 @@ class RowConfirmationService:
                 if key is not None:
                     memory_versions[key] = result["memory_version"]
                 results.append(result)
+            from .review_state import review_facts
+            refreshed = [self.store._item(conn, actor, item["item_id"]) for item in items]
+            affected = [row for row in comparison_projection(refreshed, fees, documents)["rows"]
+                        if set(row["item_ids"]) & {member.item_id for member in members}]
+            row_status = ("⚠ 確認必要" if any(row["confirmation_status"] == "⚠ 確認必要" for row in affected)
+                          else "● AI仮判定" if any(row["confirmation_status"] == "● AI仮判定" for row in affected)
+                          else "✓ 確認済み")
+            member_facts = {item["item_id"]: review_facts(item) for item in refreshed
+                            if item["item_id"] in {member.item_id for member in members}}
             response = {"kind": "ROW_FEE_CONFIRMATION", "row_id": command.row_id,
                 "case_id": command.case_id, "case_revision": revision, "fee_id": target,
-                "confirmation_status": "✓ 確認済み", "members": results,
+                "confirmation_status": row_status, "members": results,
+                "review_required": any(fact["review_required"] for fact in member_facts.values()),
+                "member_review_facts": member_facts,
                 "memory_reusable": all(member["memory_effect"] == "ACTIVE" for member in results)}
             r.save_command(conn, actor, command, "CORRECT", digest, command.case_id, response)
             return response
@@ -331,11 +342,16 @@ class SingleMemberCorrectionService:
                 shared_key_conflict=shared_key_conflict,
                 single_member_correction=True,
                 skip_memory_learning=bool(current_items[command.item_id].get("condition_overrides")))
+            from .review_state import review_facts
+            from .comparison import comparison_status
+            updated = self.store._item(conn, actor, command.item_id)
+            facts = review_facts(updated)
             response = {"kind": "SINGLE_MEMBER_CORRECTION", "case_id": command.case_id,
                 "row_id": command.row_id, "item_id": command.item_id,
                 "case_revision": result["case_revision"], "fee_id": result["fee_id"],
                 "member": result, "members": [result],
                 "memory_reusable": result["memory_effect"] == "ACTIVE",
-                "review_required": result["memory_effect"] != "ACTIVE"}
+                "review_required": facts["review_required"], "review_facts": facts,
+                "confirmation_status": comparison_status(updated)}
             r.save_command(conn, actor, command, "CORRECT", digest, command.case_id, response)
             return response

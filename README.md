@@ -1,3 +1,5 @@
+> 2026-10-12 SDK 构件更新：当前默认包为 `/Users/kyoen/Projects/aiDemo/document_processing_sdk-1.8.0-py3-none-any.whl`，元数据版本仍为 1.8.0，SHA256 为 `781161e4af3b0b45a1ca8a7745e774e1a2362eb01bcc30956e51619514fcc4e0`。启动、Adapter、Docker 构建和 probe 引用已同步；本次未重建或重启服务，新包运行尚未验证。下列历史验收仍对应当时的旧构件。
+
 > 2026-09-14 SIMPLIFY_CORE_LEARNING_FLOW_R1：限定真实SDK两轮Demo通过。普通上传无公司／运输前置窗口；fee-name-v2按完整原词与可靠同行条件学习，保留旧REAL只读兼容和Mock隔离。首轮A/B为5组，B未知分类1次，重启后第三份5项记忆命中、AI0，新9500／旧8000／Excel一致。累计48/100，不重置额度。启动：`.demo-runtime/sdk-business-r1/.venv/bin/python tools/start_real_demo.py`。结果与边界见 [本轮报告](docs/SIMPLIFY_CORE_LEARNING_FLOW_R1_REPORT.md)。旧阶段状态和证据保持原样。
 
 > 2026-09-13 REAL_ADAPTER_INTEGRATION_R1：固定 wheel 1.8.0 已接入现有网页，真实 SDK／AI 首轮和重启后第二轮通过。AI 请求首轮2次、第二轮0次，累计41/100；配送費复用、当次9500和旧8000已核对。整体仍PARTIAL：B社公司及部分条件待确认。启动命令与限定结果见 [真实SDK接入R1](docs/REAL_ADAPTER_INTEGRATION_R1.md)。以下各阶段原状态作为历史记录保留。

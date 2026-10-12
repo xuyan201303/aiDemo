@@ -1,3 +1,5 @@
+> 2026-10-12 SDK 构件更新：当前默认包为 `/Users/kyoen/Projects/aiDemo/document_processing_sdk-1.8.0-py3-none-any.whl`，元数据版本仍为 1.8.0，SHA256 为 `781161e4af3b0b45a1ca8a7745e774e1a2362eb01bcc30956e51619514fcc4e0`。启动、Adapter、Docker 构建和 probe 引用已同步；本次未重建或重启服务，新包运行尚未验证。下列历史验收仍对应当时的旧构件。
+
 # REAL_ADAPTER_INTEGRATION_R1 — 固定 wheel 真实接入
 
 案件 No.202608310011；2026-09-13。真实接入和限定两轮通过，项目整体仍 **PARTIAL**。B社公司及部分适用条件未决；没有把它们伪装成已确认，也没有强制五行横向合并。旧 W0 INCOMPLETE、Mock/PARTIAL 和历史失败证据不改写。

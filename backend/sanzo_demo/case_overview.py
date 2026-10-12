@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from sanzo_core.ingestion_store import ACTIVE
 from .review_state import review_facts
+from .current_document_review import current_document_reviews
 
 
 def summarize_case(snapshot: dict) -> dict:
@@ -10,11 +11,9 @@ def summarize_case(snapshot: dict) -> dict:
     documents = snapshot.get("documents", [])
     items = snapshot.get("items", [])
     in_progress = any(document.get("state") in ACTIVE for document in documents)
-    pending_documents = sum(
-        document.get("state") not in {"AVAILABLE", *ACTIVE}
-        or bool(document.get("issues"))
-        for document in documents
-    )
+    document_reviews = current_document_reviews(items, documents, snapshot.get("tasks", []))
+    # Count document-only issues here; item issues are counted once below.
+    pending_documents = sum(bool(review["unresolved_issues"]) for review in document_reviews.values())
     pending_items = sum(review_facts(item)["review_required"] for item in items)
     pending = pending_documents + pending_items
     if not documents:

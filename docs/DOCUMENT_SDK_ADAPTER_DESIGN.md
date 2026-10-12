@@ -1,3 +1,5 @@
+> 2026-10-12 SDK 构件更新：当前默认包为 `/Users/kyoen/Projects/aiDemo/document_processing_sdk-1.8.0-py3-none-any.whl`，元数据版本仍为 1.8.0，SHA256 为 `781161e4af3b0b45a1ca8a7745e774e1a2362eb01bcc30956e51619514fcc4e0`。启动、Adapter、Docker 构建和 probe 引用已同步；本次未重建或重启服务，新包运行尚未验证。下列历史验收仍对应当时的旧构件。
+
 # Fixed wheel 1.8.0: public output contract and minimal DocumentSdkAdapter design
 
 案件 No.202608310011。此轮是固定wheel的真实SDK样例核对及适配器设计，不是网页Real SDK接入。没有改变现有OpenAI、F1、memory、DB、Mock fixture或UI；OpenAI调用0。SDK仓库禁止访问，本次未访问。

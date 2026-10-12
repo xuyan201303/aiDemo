@@ -1,6 +1,6 @@
 """Audited human condition overlay; original reading and source evidence are immutable.
 
-This service changes only the current item's equipment or billing unit. It
+This service changes only the current item's four existing line conditions. It
 invalidates an ACTIVE rule for the exact original signature when that signature
 has become ambiguous, but never creates a rule for the corrected condition.
 """
@@ -29,6 +29,7 @@ class ConditionCorrectionCommand:
     field: str
     value: str | None
     expected_memory_evidence: list[dict] | None = None
+    evidence_note: str | None = None
 
     def validate(self) -> None:
         if not isinstance(self.case_id, str) or not self.case_id.strip():
@@ -44,12 +45,16 @@ class ConditionCorrectionCommand:
         if (not isinstance(self.idempotency_key, str) or not self.idempotency_key
                 or len(self.idempotency_key) > 200):
             raise ValueError("保存キーを確認してください")
-        if self.field not in {"equipment", "billing_unit"}:
-            raise ValueError("修正できる条件は機材と課金単位です")
+        if self.field not in {"equipment", "billing_unit", "charge_scope", "extra_terms"}:
+            raise ValueError("修正できる条件は機材・課金単位・範囲・追加条件です")
         if self.value is not None and (
             not isinstance(self.value, str) or not self.value.strip() or len(self.value) > 1024
         ):
             raise ValueError("条件は文字列または未確認を指定してください")
+        if self.evidence_note is not None and (
+                not isinstance(self.evidence_note, str) or not self.evidence_note.strip()
+                or len(self.evidence_note) > 2000):
+            raise ValueError("修正の原文根拠を2000文字以内で入力してください")
         evidence = self.expected_memory_evidence
         if evidence is not None:
             if not isinstance(evidence, list) or not 1 <= len(evidence) <= 1000:
@@ -147,11 +152,12 @@ class ConditionCorrectionService:
                 INSERT INTO sanzo_core.condition_correction_events(
                     tenant_id,event_id,case_id,item_id,actor_id,field_name,
                     original_value,before_effective_value,human_confirmed_value,
-                    original_memory_key,item_version,case_revision)
-                VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    original_memory_key,item_version,case_revision,evidence_note)
+                VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             """, (actor.tenant_id, event_id, command.case_id, command.item_id,
                   actor.actor_id, command.field, original_value, before_effective,
-                  value, key, item_version, revision))
+                  value, key, item_version, revision,
+                  command.evidence_note.strip() if command.evidence_note is not None else None))
             conn.execute("""
                 INSERT INTO sanzo_core.item_condition_overlays(
                     tenant_id,item_id,field_name,original_value,human_confirmed_value,event_id)

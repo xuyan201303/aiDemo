@@ -235,6 +235,13 @@ class DemoStore:
                      if uses_fee_policy(item["source_ref"], item["input_kind"])
                      else context.copy())
         overrides = self.repository.condition_overlays(conn, actor.tenant_id, item_id)
+        if overrides:
+            notes = conn.execute("""SELECT event_id,evidence_note FROM sanzo_core.condition_correction_events
+                WHERE tenant_id=%s AND event_id=ANY(%s)""",
+                (actor.tenant_id, [entry["event_id"] for entry in overrides.values()])).fetchall()
+            by_event = {entry["event_id"]: entry["evidence_note"] for entry in notes}
+            for correction in overrides.values():
+                correction["evidence_note"] = by_event.get(correction["event_id"])
         for field, correction in overrides.items():
             effective[field] = correction["human_confirmed_value"]
         item["effective_context"] = effective
@@ -243,6 +250,27 @@ class DemoStore:
         item["condition_review_reason"] = (
             "CONDITION_CORRECTED_FUTURE_REUSE_UNVERIFIED" if overrides else None
         )
+        amount_change = conn.execute("""SELECT event_id FROM sanzo_core.correction_events
+            WHERE tenant_id=%s AND item_id=%s
+              AND before_json->>'current_price' IS DISTINCT FROM after_json->>'unit_price'
+            ORDER BY item_version DESC LIMIT 1""", (actor.tenant_id, item_id)).fetchone()
+        item["amount_change_event_id"] = amount_change["event_id"] if amount_change else None
+        from .quote_confirmations import project_confirmations
+        confirmation_events = conn.execute("""
+            SELECT event_id,confirmation_kind,field_name,value_snapshot,anchor_sha256,
+                   document_id,document_sha256,evidence_note,actor_id,item_version,
+                   case_revision,created_at
+            FROM sanzo_core.quote_confirmation_events
+            WHERE tenant_id=%s AND item_id=%s ORDER BY item_version,event_id
+        """, (actor.tenant_id, item_id)).fetchall()
+        # Core synthetic observations may predate any uploaded-document record.
+        # They retain their original review rules; no human attestation can be
+        # made valid without a registered and verified original.
+        document = conn.execute("""SELECT sha256 FROM sanzo_core.documents
+            WHERE tenant_id=%s AND document_id=%s""",
+            (actor.tenant_id, observation.document_id)).fetchone()
+        item["quote_confirmations"] = project_confirmations(
+            item, confirmation_events, document["sha256"] if document else None)
         row = conn.execute("""
             SELECT decision_json FROM sanzo_core.item_classifications
             WHERE tenant_id=%s AND item_id=%s
@@ -330,4 +358,6 @@ class DemoStore:
                 SELECT fee_id,display_name,name_version FROM sanzo_core.fees
                 WHERE tenant_id=%s AND NOT retired ORDER BY display_name,fee_id
             """, (actor.tenant_id,)).fetchall()
+            from .quote_confirmations import attach_document_review_events
+            attach_document_review_events(conn, actor, documents)
             return {"case": case, "items": items, "documents": documents, "fees": fees}

@@ -1,11 +1,12 @@
-# Fixed-wheel probe only; Python 3.12.13. Do not install into the Demo or SDK repository environment.
-# SDK wheel SHA256: d791e0602ef138f50a065cd4cc5d3dca801226822b74328230f2faa2c0c75666
+# Fixed-wheel probe dependency pins; Python 3.12.13. Do not install into the Demo or SDK repository environment.
+# Additional dependencies declared by the current SDK wheel are resolved by pip.
+# SDK wheel SHA256: 781161e4af3b0b45a1ca8a7745e774e1a2362eb01bcc30956e51619514fcc4e0
 annotated-types==0.8.0
 cffi==2.1.1
 charset-normalizer==3.5.1
 cryptography==50.0.1
 defusedxml==0.7.1
-document-processing-sdk @ file:///Users/kyoen/Projects/sdk/document_processing_sdk-1.8.0-py3-none-any.whl
+document-processing-sdk @ file:///Users/kyoen/Projects/aiDemo/document_processing_sdk-1.8.0-py3-none-any.whl
 et-xmlfile==2.0.0
 openpyxl==3.1.5
 pdfminer-six==20251230

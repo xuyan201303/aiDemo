@@ -96,9 +96,16 @@ function setBusy(busy) {
   $("case-select").disabled = busy;
   $("case-search").disabled = busy;
   $("case-list-button").disabled = busy;
-  document.querySelectorAll(".case-list-entry").forEach(element => { element.disabled = busy; });
+  document.querySelectorAll(".case-list-entry, .case-open-button, [data-case-filter], #case-sort, #case-search-clear, #case-list input").forEach(element => { element.disabled = busy; });
+  document.querySelectorAll(".case-page-button").forEach(element => { element.disabled = busy || element.dataset.pageUnavailable === "true"; });
+  updateCaseSelection();
   $("member-correction-save").disabled = busy;
   $("condition-save").disabled = busy;
+  $("source-review-save").disabled = busy;
+  $("document-review-save").disabled = busy;
+  for (const id of ["document-review-count", "document-review-evidence", "document-review-ack"]) $(id).disabled = busy || Boolean(state.documentReviewPending);
+  for (const id of ["source-review-evidence", "source-review-ack"]) $(id).disabled = busy || Boolean(state.sourceReviewPending);
+  for (const id of ["condition-intent", "condition-evidence"]) $(id).disabled = busy || Boolean(state.conditionPending);
   $("shared-rename-save").disabled = busy || !state.sharedRename?.impact;
   $("open-shared-rename").disabled = busy || Boolean(state.pendingConfirmation);
   $("member-fee-select").disabled = busy || Boolean(state.memberPending);
@@ -265,35 +272,127 @@ function caseUpdatedAt(value) {
     timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit"
   }).format(date);
 }
+// Presentation state only; server case status and review counts remain authoritative.
+const caseListPresentation = { filter: "all", page: 1, pageSize: 5, selected: new Set() };
+function caseIcon(name, className = "ui-icon") {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("class", className); svg.setAttribute("aria-hidden", "true");
+  const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+  use.setAttribute("href", "#icon-" + name); svg.append(use); return svg;
+}
+function caseStatus(entry) {
+  return ["資料なし", "解析中", "確認必要", "確認済み"].includes(entry.status) ? entry.status : "確認必要";
+}
+// Labels only: preserve server status tokens for filtering and styling.
+function caseStatusLabel(status) {
+  return ({ "確認必要": "要確認", "資料なし": "見積資料未登録" })[status] || status;
+}
+function caseUpdatedToday(value) {
+  const date = new Date(value || "");
+  if (Number.isNaN(date.valueOf())) return false;
+  const format = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit" });
+  return format.format(date) === format.format(new Date());
+}
+function updateCaseSelection() {
+  const checkboxes = [...$("case-list").querySelectorAll('input[type="checkbox"]')];
+  for (const box of checkboxes) {
+    box.checked = caseListPresentation.selected.has(box.value);
+    box.closest("tr").classList.toggle("selected", box.checked);
+  }
+  const checked = checkboxes.filter(box => box.checked).length;
+  $("case-select-page").checked = checkboxes.length > 0 && checked === checkboxes.length;
+  $("case-select-page").indeterminate = checked > 0 && checked < checkboxes.length;
+  $("case-select-page").disabled = state.busy || !checkboxes.length;
+}
+function renderCasePagination(pageCount) {
+  const pagination = $("case-pagination"); pagination.replaceChildren();
+  const go = (label, page, accessible) => {
+    const control = button(label, () => { caseListPresentation.page = page; renderCaseList(); }, "case-page-button");
+    control.setAttribute("aria-label", accessible);
+    control.dataset.pageUnavailable = String(page < 1 || page > pageCount);
+    control.disabled = state.busy || page < 1 || page > pageCount;
+    if (page === caseListPresentation.page && /^\d+$/.test(label)) control.setAttribute("aria-current", "page");
+    pagination.append(control);
+  };
+  go("‹", caseListPresentation.page - 1, "前のページ");
+  const visible = new Set([1, pageCount, caseListPresentation.page - 1, caseListPresentation.page, caseListPresentation.page + 1]);
+  if (caseListPresentation.page <= 3) [2, 3, 4, 5].forEach(page => visible.add(page));
+  let previous = 0;
+  for (const page of [...visible].filter(page => page >= 1 && page <= pageCount).sort((a, b) => a - b)) {
+    if (previous && page > previous + 1) pagination.append(node("span", "case-page-gap", "…"));
+    go(String(page), page, page + " ページ"); previous = page;
+  }
+  go("›", caseListPresentation.page + 1, "次のページ");
+}
 function renderCaseList() {
   const list = $("case-list"); list.replaceChildren();
   const query = $("case-search").value.trim().normalize("NFC").toLocaleLowerCase("ja-JP");
-  const cases = [...state.cases].sort((a, b) => String(b.updated_at || "").localeCompare(String(a.updated_at || "")) || String(a.name || "").localeCompare(String(b.name || ""), "ja"));
-  const matched = cases.filter(entry => String(entry.name || "").normalize("NFC").toLocaleLowerCase("ja-JP").includes(query));
-  $("case-list-count").textContent = matched.length + " 件";
+  const counts = { all: state.cases.length, today: state.cases.filter(entry => caseUpdatedToday(entry.updated_at)).length };
+  for (const status of ["資料なし", "解析中", "確認必要", "確認済み"]) counts[status] = state.cases.filter(entry => caseStatus(entry) === status).length;
+  document.querySelectorAll("[data-kpi-count]").forEach(element => { element.textContent = counts[element.dataset.kpiCount]; });
+  document.querySelectorAll("[data-filter-count]").forEach(element => { element.textContent = "(" + counts[element.dataset.filterCount] + ")"; });
+  document.querySelectorAll("[data-case-filter]").forEach(element => {
+    const active = element.dataset.caseFilter === caseListPresentation.filter;
+    element.setAttribute("aria-pressed", String(active)); element.classList.toggle("active", active);
+  });
+  const sort = $("case-sort").value;
+  const cases = [...state.cases].sort((a, b) => {
+    const byName = String(a.name || "").localeCompare(String(b.name || ""), "ja");
+    const byDate = String(b.updated_at || "").localeCompare(String(a.updated_at || ""));
+    return sort === "name" ? byName : (sort === "oldest" ? -byDate : byDate) || byName;
+  });
+  const matched = cases.filter(entry => {
+    const filter = caseListPresentation.filter;
+    return String(entry.name || "").normalize("NFC").toLocaleLowerCase("ja-JP").includes(query)
+      && (filter === "all" || (filter === "today" ? caseUpdatedToday(entry.updated_at) : caseStatus(entry) === filter));
+  });
+  const pageCount = Math.max(1, Math.ceil(matched.length / caseListPresentation.pageSize));
+  caseListPresentation.page = Math.min(caseListPresentation.page, pageCount);
+  const offset = (caseListPresentation.page - 1) * caseListPresentation.pageSize;
+  const displayed = matched.slice(offset, offset + caseListPresentation.pageSize);
+  $("case-list-count").textContent = matched.length + " 件中 " + (matched.length ? offset + 1 : 0) + "–" + (offset + displayed.length) + " 件を表示";
   $("case-list-empty").hidden = Boolean(matched.length);
-  $("case-list-empty").textContent = state.cases.length ? "該当する案件がありません。検索語を変えてください。" : "案件がありません。「新しい案件」から作成してください。";
-  for (const entry of matched) {
-    const card = node("button", "case-list-entry"); card.type = "button";
-    card.disabled = state.busy;
-    card.dataset.caseId = entry.case_id;
-    const name = node("span", "case-list-name", entry.name || entry.case_id);
-    const meta = node("span", "case-list-meta");
-    meta.append(node("span", "", "資料 " + (Number.isInteger(entry.document_count) ? entry.document_count : "—") + " 件"));
-    meta.append(node("span", "", "要確認 " + (Number.isInteger(entry.review_count) ? entry.review_count : "—") + " 件"));
-    meta.append(node("span", "case-status", ["資料なし", "解析中", "確認必要", "確認済み"].includes(entry.status) ? entry.status : "確認必要"));
-    meta.append(node("time", "", caseUpdatedAt(entry.updated_at)));
-    card.append(name, meta, node("span", "case-list-arrow", "→"));
-    card.addEventListener("click", () => navigateToCase(entry.case_id));
-    list.append(card);
+  $("case-list-empty").textContent = state.cases.length ? "該当する見積比較がありません。検索語や絞り込みを変えてください。" : "原価単価一覧表がありません。「原価単価一覧表を作成」から作成してください。";
+  for (const entry of displayed) {
+    const row = node("tr", "case-list-row"); row.dataset.caseId = entry.case_id;
+    const selection = node("td", "case-checkbox-cell");
+    const checkbox = node("input"); checkbox.type = "checkbox"; checkbox.value = entry.case_id; checkbox.disabled = state.busy;
+    checkbox.setAttribute("aria-label", (entry.name || entry.case_id) + "を選択");
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) caseListPresentation.selected.add(entry.case_id); else caseListPresentation.selected.delete(entry.case_id);
+      updateCaseSelection();
+    });
+    selection.append(checkbox);
+    const nameCell = node("td", "case-name-cell");
+    const open = button("", () => navigateToCase(entry.case_id), "case-list-entry"); open.disabled = state.busy;
+    const badge = node("span", "case-document-icon"); badge.append(caseIcon("document"));
+    const copy = node("span", "case-name-copy");
+    copy.append(node("span", "case-list-name", entry.name || entry.case_id), node("span", "case-list-description", entry.document_count ? "見積資料・比較結果" : "見積資料の登録待ち"));
+    open.append(badge, copy); nameCell.append(open);
+    const documents = node("td", "case-document-count", (Number.isInteger(entry.document_count) ? entry.document_count : "—") + " 件");
+    const review = node("td", "case-review-count" + (entry.review_count > 0 ? " needs-review" : ""), (Number.isInteger(entry.review_count) ? entry.review_count : "—") + " 件");
+    const statusCell = node("td");
+    const status = caseStatus(entry);
+    const pill = node("span", "case-status", caseStatusLabel(status)); pill.dataset.status = status; statusCell.append(pill);
+    const dateCell = node("td", "case-date"); const time = node("time", "", caseUpdatedAt(entry.updated_at));
+    if (entry.updated_at && !Number.isNaN(new Date(entry.updated_at).valueOf())) time.dateTime = entry.updated_at;
+    dateCell.append(time);
+    const actionCell = node("td", "case-action-cell");
+    const action = button("詳細へ", () => navigateToCase(entry.case_id), "case-open-button"); action.disabled = state.busy;
+    action.setAttribute("aria-label", (entry.name || entry.case_id) + "の詳細へ"); action.append(caseIcon("arrow")); actionCell.append(action);
+    row.addEventListener("click", event => {
+      if (event.target instanceof Element && !event.target.closest("button, input, a, label")) navigateToCase(entry.case_id);
+    });
+    row.append(selection, nameCell, documents, review, statusCell, dateCell, actionCell); list.append(row);
   }
+  updateCaseSelection(); renderCasePagination(pageCount);
 }
 function renderCaseView() {
   const hasCase = Boolean(state.selectedCase);
   $("case-list-view").hidden = hasCase;
   $("case-detail-view").hidden = !hasCase;
-  $("current-case-name").textContent = hasCase ? (state.cases.find(entry => entry.case_id === state.selectedCase)?.name || "案件詳細") : "";
-  document.title = hasCase ? "SANZO | " + $("current-case-name").textContent : "SANZO | 案件一覧";
+  $("current-case-name").textContent = hasCase ? (state.cases.find(entry => entry.case_id === state.selectedCase)?.name || "見積比較の詳細") : "";
+  document.title = hasCase ? "見積比較表｜" + $("current-case-name").textContent + "｜SANZO" : "見積比較一覧｜SANZO｜物流見積比較";
 }
 async function navigateToCase(caseId) {
   if (state.busy) return;
@@ -305,7 +404,7 @@ async function loadCases(preferred = null) {
   state.cases = Array.isArray(result) ? result : result.cases || [];
   const requested = preferred === null ? caseFromLocation() : preferred;
   const select = $("case-select");
-  select.replaceChildren(node("option", "", "案件を選択してください"));
+  select.replaceChildren(node("option", "", "見積比較を選択してください"));
   select.options[0].value = "";
   for (const item of state.cases) {
     const option = node("option", "", item.name || item.case_id);
@@ -315,7 +414,7 @@ async function loadCases(preferred = null) {
   state.selectedCase = state.cases.some(item => item.case_id === requested) ? requested : "";
   if (requested && !state.selectedCase) {
     window.history.replaceState(null, "", "/cases");
-    showNotice("案件が見つかりません。案件一覧から選択してください。", true);
+    showNotice("見積比較が見つかりません。見積比較一覧から選択してください。", true);
   }
   select.value = state.selectedCase;
   renderCaseList();
@@ -349,7 +448,7 @@ function renderSnapshot() {
     ? "Excel ダウンロード ↓" : "草稿 Excel ダウンロード ↓";
   $("item-count").textContent = items.length + " 明細";
   $("no-documents").hidden = documents.length > 0;
-  $("no-documents").textContent = state.selectedCase ? "Excel または PDF を追加してください。" : "案件を作成し、見積資料を追加してください。";
+  $("no-documents").textContent = state.selectedCase ? "Excel または PDF を追加してください。" : "原価単価一覧表を作成し、見積資料を追加してください。";
   $("documents").replaceChildren();
   documents.forEach(document => {
     const card = node("article", "document-card");
@@ -363,15 +462,28 @@ function renderSnapshot() {
     body.append(name);
     const task = latestTask(document.document_id);
     const jobStatus = task?.status || document.latest_job_state || document.state || document.status || "RECEIVED";
+    const currentReview = state.snapshot.document_reviews?.[document.document_id];
     const aiError = aiFailure(task);
     const statusLine = node("div", "document-state", aiError ? (aiError.category === "PAUSED_LOCAL" ? "AI 分類を保留（呼出しなし）" : aiError.purpose === "fee_classification" ? "AI の費目分類に失敗しました" : aiError.purpose === "quotation_extraction" ? "AI の明細抽出に失敗しました" : "AI リクエストに失敗しました") : taskStatusText(jobStatus));
     statusLine.dataset.status = jobStatus;
     statusLine.classList.toggle("task-complete", jobStatus === "AVAILABLE");
     statusLine.classList.toggle("task-error", ["FAILED", "BLOCKED", "INTERRUPTED"].includes(jobStatus));
     body.append(statusLine);
+    if (currentReview && ["AVAILABLE", "REVIEW_REQUIRED"].includes(jobStatus)) {
+      statusLine.textContent = currentReview.review_required ? "今回の確認が必要です" : "今回の確認済み";
+      statusLine.classList.toggle("task-complete", !currentReview.review_required);
+      const remaining = node("div", "current-document-review");
+      for (const issue of currentReview.unresolved_issues || []) {
+        const text = typeof issue === "string" ? issue : issue.message || [issue.code, issue.reason, issue.field, issue.limitation].filter(Boolean).join("：");
+        remaining.append(node("p", "subtle", text));
+      }
+      if (currentReview.review_required) remaining.append(node("p", "subtle", "比較表の「確認・修正」から対象明細の条件・原文を確認してください。未取得の必要情報は原件で確認し、資料自体にない場合は提供元に確認してください。読取で欠落した明細や未対応の資料問題は、明細の確認だけでは解消できません。"));
+      body.append(remaining);
+    }
 
     const technical = node("details", "document-details");
     technical.append(node("summary", "", "詳細を見る"));
+    technical.append(node("div", "task-detail", "読取時の記録：" + taskStatusText(jobStatus) + "（当時の結果を保持）"));
     const successfulCalls = task?.result_json?.ai_metadata?.calls || [];
     if (successfulCalls.length && successfulCalls.every(call => call.execution_kind === "OPENAI_API" && call.http_status === 200)) {
       const extractCount = successfulCalls.filter(call => call.purpose === "quotation_extraction").length;
@@ -397,6 +509,9 @@ function renderSnapshot() {
     body.append(technical);
     const actions = node("div", "document-actions");
     actions.append(button("原文をプレビュー ↗", () => openPreview(document.document_id)));
+    if (currentReview && ["AVAILABLE", "REVIEW_REQUIRED"].includes(jobStatus)) {
+      actions.append(button("資料全体の明細を確認", () => openDocumentReview(document, currentReview)));
+    }
     const running = task && !terminalTaskStates.has(task.status);
     if (running) {
       actions.append(button("状態を更新", () => refreshTaskStatus()));
@@ -654,7 +769,22 @@ function openRowEdit(row, draft = null, requestKeys = null) {
     const memberActions = node("div", "member-actions");
     memberActions.append(button("この明細を修正", () => openMemberCorrection(row, item)));
     memberActions.append(button("適用条件を修正", () => openConditionCorrection(row, item)));
+    memberActions.append(button("原文の照合を記録", () => openSourceReview(row, item)));
     card.append(heading, footer, memberActions); host.append(card);
+    const currentFacts = reviewFacts(item);
+    if (currentFacts) {
+      card.append(node("p", "member-pending-reasons", currentFacts.review_reasons?.length ? "今回の要確認：" + currentFacts.review_reasons.join("・") : "今回の明細は確認済み"));
+      if (currentFacts.review_reasons?.includes("適用条件未確認")) {
+        const missing = ["equipment", "billing_unit", "charge_scope", "extra_terms"].filter(field => !effectiveContext(item)[field]);
+        card.append(node("p", "subtle", missing.length ? "原件で確認する条件：" + missing.map(field => conditionLabels[field]).join("・") + "。「適用条件を修正」で対象の条件を選択してください。"
+          : "表示値を原文で確認し、「適用条件を修正」→「現在の値を確認する」で確認を保存してください。"));
+      }
+      if (currentFacts.learning_notices?.length) card.append(node("p", "subtle", "今後の学習：" + currentFacts.learning_notices.join("・")));
+      if (currentFacts.metadata_notices?.length) card.append(node("p", "subtle", currentFacts.metadata_notices.join("・")));
+      const humanSource = item.quote_confirmations?.source;
+      if (humanSource) card.append(node("p", "subtle", (humanSource.valid ? "原文の人工照合済み：" : "原文の照合対象が変わりました。再照合してください：")
+        + humanSource.evidence_note + " ／ " + humanSource.actor_id + " ／ " + humanSource.created_at));
+    }
     const details = node("section", "member-conditions"); details.dataset.detailMemberId = item.item_id;
     details.append(node("h3", "", item.forwarder + "：" + (observation(item).raw_label || "未取得")));
     const conditions = node("dl", "edit-facts");
@@ -737,13 +867,15 @@ function restoreRowFocus() {
 }
 function correctionSavedNotice(response) {
   const members = Array.isArray(response.members) ? response.members : [response];
+  const remaining = [...new Set(Object.values(response.member_review_facts || {}).flatMap(facts => facts.review_reasons || []))];
+  const current = response.review_required ? " 今回の残りの確認事項：" + (remaining.join("・") || "比較表の要確認事項を確認してください。") : "";
   if (members.length && members.every(member => member.memory_effect === "ACTIVE")) {
-    return "統一費目名を保存しました。同じ原文・条件の次回以降の読み取りに反映されます。";
+    return "統一費目名を保存しました。同じ原文・条件の次回以降の読み取りに反映されます。" + current;
   }
   if (members.length && members.every(member => member.memory_effect === "UNCHANGED_AMOUNT_ONLY")) {
     return "単価を保存しました。費目名の確認記録は変更していません。";
   }
-  return "今回の費目確認を保存しました。学習上の注意があるため、次回の自動適用には確認が必要です。";
+  return "今回の費目確認を保存しました。学習上の注意があるため、次回の自動適用には確認が必要です。" + current;
 }
 function submittedKey(operation, payload) {
   // A lost response can be retried with the exact same idempotency key.
@@ -816,10 +948,46 @@ function renderConditionTrace() {
   const field = $("condition-field").value, original = context(item)[field], overlay = item.condition_overrides?.[field];
   const effective = effectiveContext(item)[field];
   $("condition-original").textContent = original || "未取得";
-  $("condition-human").textContent = overlay?.human_confirmed_value || "未確認";
+  const confirmed = item.quote_confirmations?.conditions?.[field];
+  $("condition-human").textContent = overlay?.human_confirmed_value || (confirmed?.valid ? "現在の値を人工確認済み" : "未確認");
   $("condition-effective").textContent = effective || "未確認";
   $("condition-value").value = effective || "";
+  renderConditionIntent();
   formError("condition-error", "");
+}
+function renderConditionIntent() {
+  const confirm = $("condition-intent").value === "confirm";
+  $("condition-value").readOnly = confirm;
+  $("condition-evidence-field").hidden = false;
+  $("condition-save").textContent = confirm ? "現在の値の確認を保存" : "修正した条件を保存";
+  $("condition-help").textContent = confirm
+    ? "原文を確認し、この明細の選択した値だけを確認します。未取得の値は確認できません。"
+    : "この明細だけの条件を修正します。修正後は費目の分類を再確認してください。次回の自動適用は未確認のままです。";
+  if (confirm && state.conditionCorrection) $("condition-value").value = effectiveContext(state.conditionCorrection.item)[$("condition-field").value] || "";
+}
+function openSourceReview(row, item) {
+  if (state.busy || state.pendingConfirmation) return;
+  state.sourceReview = { rowId: row.row_id, item: structuredClone(item), caseId: state.editCaseId, caseRevision: state.editCaseRevision };
+  state.sourceReviewPending = null;
+  $("source-review-form").reset(); formError("source-review-error", "");
+  fillCorrectionSummary($("source-review-summary"), item);
+  const source = sourceDetails(item);
+  $("source-review-position").textContent = source.filename + " / " + source.position
+    + (asObject(item.source_ref).locator_status === "PAGE_ONLY" ? "。現在の位置情報はページ単位です。対応明細を特定できる人工確認の根拠を記入してください。" : "");
+  $("source-review-dialog").showModal();
+}
+function openDocumentReview(document, review) {
+  if (state.busy) return;
+  state.documentReview = { document: structuredClone(document), review: structuredClone(review), caseId: state.selectedCase,
+    caseRevision: state.snapshot.case.case_revision };
+  state.documentReviewPending = null;
+  $("document-review-form").reset(); formError("document-review-error", "");
+  const count = state.snapshot.items.filter(item => observation(item).document_id === document.document_id).length;
+  $("document-review-summary").textContent = document.original_filename + " ／ 登録済み " + count + " 明細";
+  $("document-review-reasons").textContent = (review.unresolved_issues || []).map(issue => typeof issue === "string" ? issue
+    : issue.message || [issue.code, issue.reason, issue.field, issue.limitation].filter(Boolean).join("：")).join(" ／ ");
+  if (review.coverage_unavailable_reason) $("document-review-reasons").textContent += "\n" + review.coverage_unavailable_reason;
+  $("document-review-dialog").showModal();
 }
 async function openSharedRename() {
   if (state.busy || state.pendingConfirmation || !renameAvailable()) return;
@@ -847,8 +1015,8 @@ async function openSharedRename() {
     const conditions = Array.isArray(impact.conditions) ? impact.conditions : [];
     const conditionNames = conditions.map(condition => Object.entries(conditionLabels).filter(([key]) => condition[key]).map(([key, label]) => label + "：" + condition[key]).join(" ／ "));
     list.append(node("li", "", "使用中の条件：" + (conditionNames.length ? conditionNames.join("、") : "確認できる条件なし")));
-    list.append(node("li", "", "この案件の対象明細：" + impact.current_case_item_count + " 件"));
-    list.append(node("li", "", "ほかの案件：" + impact.other_case_count + " 件"));
+    list.append(node("li", "", "この見積比較の対象明細：" + impact.current_case_item_count + " 件"));
+    list.append(node("li", "", "ほかの見積比較：" + impact.other_case_count + " 件"));
     host.append(list);
     $("shared-rename-current").textContent = "「" + impact.display_name + "」から変更します。";
     renderRenamePreview();
@@ -868,7 +1036,7 @@ async function submitPinnedAction({ pendingName, path, body, dialogId, errorId, 
   } catch (error) {
     if (error.status && error.status < 500) {
       state[pendingName] = null;
-      formError(errorId, errorText(error) + (error.status === 409 ? "\n最新の案件と費目を読み直してから、もう一度操作してください。" : ""));
+      formError(errorId, errorText(error) + (error.status === 409 ? "\n最新の見積比較と費目を読み直してから、もう一度操作してください。" : ""));
     } else formError(errorId, "保存結果を確認できません。同じ要求で再確認してください。入力と要求の版は保持しています。");
   } finally {
     setBusy(false);
@@ -898,7 +1066,19 @@ async function mutation(action, errorId) {
 
 $("new-case-button").addEventListener("click", () => { $("new-case-form").hidden = false; $("case-name").focus(); });
 $("cancel-case").addEventListener("click", () => { $("new-case-form").hidden = true; });
-$("case-search").addEventListener("input", renderCaseList);
+$("case-search").addEventListener("input", () => { caseListPresentation.page = 1; renderCaseList(); });
+$("case-search-clear").addEventListener("click", () => { $("case-search").value = ""; caseListPresentation.page = 1; renderCaseList(); $("case-search").focus(); });
+$("case-sort").addEventListener("change", () => { caseListPresentation.page = 1; renderCaseList(); });
+document.querySelectorAll("[data-case-filter]").forEach(control => control.addEventListener("click", () => {
+  if (state.busy) return;
+  caseListPresentation.filter = control.dataset.caseFilter; caseListPresentation.page = 1; renderCaseList();
+}));
+$("case-select-page").addEventListener("change", event => {
+  for (const box of $("case-list").querySelectorAll('input[type="checkbox"]')) {
+    if (event.target.checked) caseListPresentation.selected.add(box.value); else caseListPresentation.selected.delete(box.value);
+  }
+  updateCaseSelection();
+});
 for (const id of ["case-list-button", "sidebar-cases"]) {
   $(id).addEventListener("click", event => {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -918,14 +1098,14 @@ $("new-case-form").addEventListener("submit", event => {
   event.preventDefault();
   mutation(async () => {
     const name = $("case-name").value.trim();
-    if (!name) throw new Error("案件名を入力してください。");
+    if (!name) throw new Error("比較名を入力してください。");
     const result = await api("/api/cases", { method: "POST", body: JSON.stringify({ name }) });
     const created = result.case || result;
     window.history.pushState(null, "", casePath(created.case_id));
     await loadCases(created.case_id);
     $("new-case-form").reset();
     $("new-case-form").hidden = true;
-    showNotice("新しい案件を作成しました。この案件の資料を追加してください。");
+    showNotice("原価単価一覧表を作成しました。この一覧表に使用する見積資料を追加してください。");
   });
 });
 initUploadWorkflow();
@@ -962,8 +1142,20 @@ $("reclassify-members").addEventListener("click", () => {
 $("open-shared-rename").addEventListener("click", openSharedRename);
 $("member-fee-select").addEventListener("change", renderMemberFeeChoice);
 $("condition-field").addEventListener("change", renderConditionTrace);
+$("condition-intent").addEventListener("change", renderConditionIntent);
+$("condition-preview").addEventListener("click", () => {
+  const item = state.conditionCorrection?.item;
+  if (item) openPreview(observation(item).document_id, item);
+});
+$("source-review-preview").addEventListener("click", () => {
+  const item = state.sourceReview?.item;
+  if (item) openPreview(observation(item).document_id, item);
+});
+$("document-review-preview").addEventListener("click", () => {
+  if (state.documentReview) openPreview(state.documentReview.document.document_id);
+});
 $("shared-rename-name").addEventListener("input", renderRenamePreview);
-for (const id of ["member-new-name", "condition-value", "shared-rename-name"]) {
+for (const id of ["member-new-name", "condition-value", "condition-evidence", "source-review-evidence", "document-review-evidence", "shared-rename-name"]) {
   $(id).addEventListener("compositionstart", () => { state.modalComposing = true; });
   $(id).addEventListener("compositionend", () => { state.modalComposing = false; state.modalImeEndedAt = performance.now(); });
   $(id).addEventListener("keydown", event => {
@@ -1006,6 +1198,10 @@ $("member-correction-form").addEventListener("submit", async event => {
     dialogId: "member-correction-dialog", errorId: "member-correction-error", saveId: "member-correction-save", buttonText: "この明細を保存",
     savedText: result => {
       const member = result.member || result.members?.[0] || result;
+      if (result.review_required && result.review_facts?.review_reasons?.length) {
+        return "この明細の分類を保存しました。今回の残りの確認事項：" + result.review_facts.review_reasons.join("・")
+          + (result.memory_reusable === false ? "。次回の自動適用にも確認が必要です。" : "");
+      }
       if (member.memory_effect === "CONFLICTED" || member.memory_action === "CONFLICTED_SHARED_KEY") {
         return "この明細の分類を保存しました。学習対応に競合があるため、次回の同じ表記は再確認が必要です。";
       }
@@ -1020,21 +1216,72 @@ $("condition-form").addEventListener("submit", async event => {
   formError("condition-error", "");
   if (!state.conditionPending) {
     const { rowId, item, caseId, caseRevision } = state.conditionCorrection;
-    const field = $("condition-field").value, value = $("condition-value").value.trim();
-    if (!["equipment", "billing_unit"].includes(field)) { formError("condition-error", "修正する条件を選択してください。"); return; }
+    const field = $("condition-field").value;
+    const confirm = $("condition-intent").value === "confirm";
+    const value = confirm ? effectiveContext(item)[field] : $("condition-value").value.trim();
+    if (!["equipment", "billing_unit", "charge_scope", "extra_terms"].includes(field)) { formError("condition-error", "確認する条件を選択してください。"); return; }
     if (!value) { formError("condition-error", "人工確認した条件を入力してください。"); return; }
-    if ([...value].length > 100) { formError("condition-error", "条件は100文字以内で入力してください。"); return; }
-    if (value === effectiveContext(item)[field]) { formError("condition-error", "現在の有効値と同じです。変更後の条件を入力してください。"); return; }
-    const body = { expected_case_revision: caseRevision, expected_item_version: item.version,
-      expected_memory_version: item.current_memory_version ?? 0, ...expectedMemoryEvidence(item), field, value };
+    if ([...value].length > 1024) { formError("condition-error", "条件は1024文字以内で入力してください。"); return; }
+    if (!confirm && value === effectiveContext(item)[field]) { formError("condition-error", "値が同じです。「現在の値を確認する」を選んでください。"); return; }
+    const evidence = $("condition-evidence").value.trim();
+    if (!evidence) { formError("condition-error", "原文で確認した位置・根拠を入力してください。"); return; }
+    const body = { expected_case_revision: caseRevision, expected_item_version: item.version, field, value,
+      ...(confirm ? { kind: "CONDITION_VALUE", evidence_note: evidence }
+        : { evidence_note: evidence, expected_memory_version: item.current_memory_version ?? 0, ...expectedMemoryEvidence(item) }) };
     body.idempotency_key = submittedKey("condition-correction:" + item.item_id, body);
     state.conditionPending = { path: "/api/cases/" + encodeURIComponent(caseId) + "/comparison/" + encodeURIComponent(rowId)
-      + "/members/" + encodeURIComponent(item.item_id) + "/conditions", body };
+      + "/members/" + encodeURIComponent(item.item_id) + (confirm ? "/quote-confirmation" : "/conditions"), body };
   }
   const pending = state.conditionPending;
   await submitPinnedAction({ pendingName: "conditionPending", path: pending.path, body: pending.body,
     dialogId: "condition-dialog", errorId: "condition-error", saveId: "condition-save", buttonText: "条件を保存",
-    savedText: "今回の明細の適用条件を保存しました。次回の版式読取への自動適用は未確認です。" });
+    savedText: result => result.kind === "ITEM_QUOTE_CONFIRMATION" ? quoteConfirmationMessage(result)
+      : "この明細の条件を修正しました。費目の分類を再確認してください。次回の自動適用は未確認です。" });
+});
+function quoteConfirmationMessage(result) {
+  return "この明細の確認を保存しました。" + (result.review_required
+    ? "今回の残りの確認事項：" + (result.review_facts?.review_reasons || []).join("・")
+    : "この明細の今回の確認は完了しました。ほかの明細・資料の確認状態は比較表で確認してください。")
+    + (result.review_facts?.learning_notices?.length ? " 学習上の注意：" + result.review_facts.learning_notices.join("・") : "");
+}
+$("source-review-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (state.busy || state.modalComposing || !state.sourceReview) return;
+  formError("source-review-error", "");
+  if (!state.sourceReviewPending) {
+    const { rowId, item, caseId, caseRevision } = state.sourceReview;
+    const evidence = $("source-review-evidence").value.trim();
+    if (!evidence || !$("source-review-ack").checked) { formError("source-review-error", "対応する原文明細を確認し、位置・表記・金額などの根拠を記入してください。"); return; }
+    const body = { expected_case_revision: caseRevision, expected_item_version: item.version,
+      kind: "SOURCE_REVIEW", evidence_note: evidence };
+    body.idempotency_key = submittedKey("source-review:" + item.item_id, body);
+    state.sourceReviewPending = { path: "/api/cases/" + encodeURIComponent(caseId) + "/comparison/" + encodeURIComponent(rowId)
+      + "/members/" + encodeURIComponent(item.item_id) + "/quote-confirmation", body };
+  }
+  const pending = state.sourceReviewPending;
+  await submitPinnedAction({ pendingName: "sourceReviewPending", path: pending.path, body: pending.body,
+    dialogId: "source-review-dialog", errorId: "source-review-error", saveId: "source-review-save", buttonText: "この明細の照合を保存",
+    savedText: quoteConfirmationMessage });
+});
+$("document-review-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (state.busy || state.modalComposing || !state.documentReview) return;
+  formError("document-review-error", "");
+  if (!state.documentReviewPending) {
+    const { document, review, caseId, caseRevision } = state.documentReview;
+    const note = $("document-review-evidence").value.trim(), count = Number($("document-review-count").value);
+    if (!note || !$("document-review-ack").checked || !Number.isInteger(count) || count < 1) {
+      formError("document-review-error", "原文全体と各明細を照合し、明細数・根拠を入力してください。"); return;
+    }
+    const body = { expected_case_revision: caseRevision, expected_review_sha256: review.review_sha256,
+      confirmed_item_count: count, evidence_note: note };
+    body.idempotency_key = submittedKey("document-review:" + document.document_id, body);
+    state.documentReviewPending = { path: "/api/cases/" + encodeURIComponent(caseId) + "/documents/" + encodeURIComponent(document.document_id) + "/review", body };
+  }
+  const pending = state.documentReviewPending;
+  await submitPinnedAction({ pendingName: "documentReviewPending", path: pending.path, body: pending.body,
+    dialogId: "document-review-dialog", errorId: "document-review-error", saveId: "document-review-save", buttonText: "この資料の照合を保存",
+    savedText: "この資料の今回の照合を保存しました。読取時の記録は履歴として保持しています。見積比較全体の状態は一覧・比較表で確認してください。" });
 });
 $("shared-rename-form").addEventListener("submit", async event => {
   event.preventDefault();
@@ -1062,7 +1309,8 @@ $("shared-rename-form").addEventListener("submit", async event => {
     savedText: "共通名称を変更しました。同じ統一費目を参照する現在表示に反映されます。" });
 });
 for (const [dialogId, pendingName, errorId] of [["member-correction-dialog", "memberPending", "member-correction-error"],
-  ["condition-dialog", "conditionPending", "condition-error"], ["shared-rename-dialog", "renamePending", "shared-rename-error"]]) {
+  ["condition-dialog", "conditionPending", "condition-error"], ["source-review-dialog", "sourceReviewPending", "source-review-error"],
+  ["document-review-dialog", "documentReviewPending", "document-review-error"], ["shared-rename-dialog", "renamePending", "shared-rename-error"]]) {
   $(dialogId).addEventListener("cancel", event => {
     if (!state[pendingName]) return;
     event.preventDefault();
@@ -1170,7 +1418,7 @@ $("revoke-button").addEventListener("click", () => mutation(async () => {
   await api("/api/items/" + encodeURIComponent(item.item_id) + "/revoke", { method: "POST", body: JSON.stringify(body) });
   $("edit-dialog").close();
   await loadSnapshot();
-  showNotice("確認記録を撤回しました。既存案件の表示は維持し、新規明細には自動適用しません。");
+  showNotice("確認記録を撤回しました。既存の見積比較の表示は維持し、新規明細には自動適用しません。");
 }, "edit-error"));
 $("export-button").addEventListener("click", () => {
   if (state.selectedCase) window.location.assign("/api/cases/" + encodeURIComponent(state.selectedCase) + "/export.xlsx");
@@ -1180,6 +1428,8 @@ document.querySelectorAll(".close-dialog").forEach(element => element.addEventLi
   if (dialog.id === "edit-dialog") { closeRowEdit(); return; }
   const pending = { "member-correction-dialog": ["memberPending", "member-correction-error"],
     "condition-dialog": ["conditionPending", "condition-error"],
+    "source-review-dialog": ["sourceReviewPending", "source-review-error"],
+    "document-review-dialog": ["documentReviewPending", "document-review-error"],
     "shared-rename-dialog": ["renamePending", "shared-rename-error"] }[dialog.id];
   if (pending && state[pending[0]]) { formError(pending[1], "保存結果が未確認です。同じ要求で再確認してください。"); return; }
   dialog.close();

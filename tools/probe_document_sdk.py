@@ -15,8 +15,8 @@ import sys
 import time
 import traceback
 
-WHEEL = Path('/Users/kyoen/Projects/sdk/document_processing_sdk-1.8.0-py3-none-any.whl')
-EXPECTED_SHA = 'd791e0602ef138f50a065cd4cc5d3dca801226822b74328230f2faa2c0c75666'
+WHEEL = Path(__file__).resolve().parents[1] / 'document_processing_sdk-1.8.0-py3-none-any.whl'
+EXPECTED_SHA = '781161e4af3b0b45a1ca8a7745e774e1a2362eb01bcc30956e51619514fcc4e0'
 PROJECT = Path(__file__).resolve().parents[1]
 SAMPLES = ('01_A社_初回見積.xlsx', '02_B社_初回見積.pdf', '03_A社_次回見積.xlsx')
 FORBIDDEN = '/Users/kyoen/Projects/document-processing-sdk'

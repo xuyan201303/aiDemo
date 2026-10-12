@@ -2,6 +2,7 @@
 from collections import Counter
 from .comparison import comparison_groups, comparison_projection
 from .review_state import review_facts
+from .current_document_review import current_document_reviews, issue_text
 from io import BytesIO
 import json
 
@@ -65,7 +66,15 @@ def _item_issues(item):
 
 def export_review_state(items, documents, tasks=()):
     """Current quotation blockers only; future learning notices remain audit facts."""
-    document_states = {d["document_id"]: _document_status(d, tasks) for d in documents}
+    reviews = current_document_reviews(items, documents, tasks)
+    # File-level unresolved issues and member-level issues are each listed once.
+    # The document card may summarize both, but an item's review must not create
+    # a duplicate empty warning row for its otherwise available document.
+    document_states = {document_id: (
+        "AVAILABLE" if review["historical_state"] in {"AVAILABLE", "REVIEW_REQUIRED"}
+            and not review["unresolved_issues"] else review["current_state"],
+        " / ".join(issue_text(issue) for issue in review["unresolved_issues"]))
+        for document_id, review in reviews.items()}
     item_issues = {item["item_id"]: _item_issues(item) for item in items}
     draft = (not items or
              any(state != "AVAILABLE" or reason for state, reason in document_states.values()) or
@@ -114,7 +123,10 @@ def workbook_bytes(case: dict, items: list[dict], documents: list[dict], *,
                               "原本名", "原本SHA256", "原本ID", "位置", "原文金額", "見積日", "有効期限",
                               "AI 提案（未確認の参考情報）", "位置確認状態", "現在の確認記録状態", "資料処理状態", "読取由来", "fixture版", "fixtureSHA256", "学習由来",
                               "元の機材", "人工確認した機材", "有効な機材",
-                              "元の課金単位", "人工確認した課金単位", "有効な課金単位"])
+                              "元の課金単位", "人工確認した課金単位", "有効な課金単位",
+                              "元の範囲", "人工確認した範囲", "有効な範囲",
+                              "元の追加条件", "人工確認した追加条件", "有効な追加条件", "現在の資料確認状態"])
+        current_documents = current_document_reviews(items, documents, tasks)
         for item in items:
             obs = item["observation"]
             doc = docs.get(obs["document_id"], {})
@@ -128,13 +140,16 @@ def workbook_bytes(case: dict, items: list[dict], documents: list[dict], *,
                                   item["version"], doc.get("original_filename"), doc.get("sha256"), obs["document_id"],
                                   source_position(item), item.get("raw_value"), item.get("quotation_date"), item.get("valid_until"),
                                   item.get("ai_suggested_name"), (item.get("source_ref") or {}).get("locator_status", "UNAVAILABLE"),
-                                  item.get("current_memory_status"), document_states.get(obs["document_id"], ("UNKNOWN", ""))[0],
+                                  item.get("current_memory_status"), _document_status(doc, tasks)[0] if doc else "UNKNOWN",
                                   (item.get("source_ref") or {}).get("origin"),
                                   (item.get("source_ref") or {}).get("fixture_version"),
                                   (item.get("source_ref") or {}).get("fixture_sha256"),
                                   item.get("current_memory_origin"),
                                   obs["context"].get("equipment"), (overrides.get("equipment") or {}).get("human_confirmed_value"), context.get("equipment"),
-                                  obs["context"].get("billing_unit"), (overrides.get("billing_unit") or {}).get("human_confirmed_value"), context.get("billing_unit")])
+                                  obs["context"].get("billing_unit"), (overrides.get("billing_unit") or {}).get("human_confirmed_value"), context.get("billing_unit"),
+                                  obs["context"].get("charge_scope"), (overrides.get("charge_scope") or {}).get("human_confirmed_value"), context.get("charge_scope"),
+                                  obs["context"].get("extra_terms"), (overrides.get("extra_terms") or {}).get("human_confirmed_value"), context.get("extra_terms"),
+                                  current_documents.get(obs["document_id"], {}).get("current_state", "UNKNOWN")])
         issues = book.create_sheet("未確認事項")
         append_text(issues, [marker, origin_summary, "保存時点の処理・確認状態。AI提案は人工確認ではありません。"])
         append_text(issues, ["ファイル／明細", "処理・確認状態", "確認事項", "SHA256"])
@@ -157,10 +172,28 @@ def workbook_bytes(case: dict, items: list[dict], documents: list[dict], *,
         output = BytesIO()
         row_audit = book.create_sheet("確認情報")
         append_text(row_audit, ["統一費目", "統一状態", "会社", "原文費目", "AI提案", "採用時の費目名",
-                                "費目確認", "学習適格", "有効な学習記録", "今回の学習適用", "要確認理由", "確認記録版", "出典", "学習上の注意"])
+                                "費目確認", "学習適格", "有効な学習記録", "今回の学習適用", "要確認理由", "確認記録版", "出典", "学習上の注意",
+                                "今回の条件確認", "今回の原文照合", "人工確認の根拠・操作人・日時", "資料の参考情報", "元の処理状態・警告"])
+        document_reviews = current_document_reviews(items, documents, tasks)
         for row in projection["rows"]:
             for member in row["member_items"]:
                 facts = member.get("review_facts") or review_facts(member)
+                confirmations = member.get("quote_confirmations") or {}
+                confirmation_events = list((confirmations.get("conditions") or {}).values())
+                if confirmations.get("source"):
+                    confirmation_events.append(confirmations["source"])
+                evidence = "\n".join((event.get("field_name") or "原文") + "：" + event.get("evidence_note", "")
+                    + " / " + event.get("actor_id", "") + " / " + str(event.get("created_at", ""))
+                    + ("（現在有効）" if event.get("valid") else "（対象値変更により再確認）")
+                    for event in confirmation_events)
+                for field, overlay in (member.get("condition_overrides") or {}).items():
+                    evidence += "\n" + field + "（条件修正）：" + (overlay.get("evidence_note") or "旧形式の修正記録：補足根拠なし")
+                    evidence += " / " + overlay.get("actor_id", "") + " / " + str(overlay.get("confirmed_at", ""))
+                doc_review = document_reviews.get(member["observation"]["document_id"], {})
+                coverage = doc_review.get("coverage_confirmation")
+                if coverage:
+                    evidence += "\n資料全体：" + coverage.get("evidence_note", "") + " / " + coverage.get("actor_id", "")
+                    evidence += " / " + str(coverage.get("created_at", "")) + ("（現在有効）" if coverage.get("valid") else "（再確認）")
                 append_text(row_audit, [row["display_name"], row["confirmation_status"], member["forwarder"],
                     member["observation"].get("raw_label"), member.get("ai_suggested_name"), member.get("current_fee_name"),
                     "確認済み" if facts["classification_confirmed"] else "未確認",
@@ -169,12 +202,16 @@ def workbook_bytes(case: dict, items: list[dict], documents: list[dict], *,
                     "適用あり" if facts["memory_applied"] else "適用なし",
                     " / ".join(facts["review_reasons"]),
                     member.get("current_memory_version", 0), source_position(member),
-                    " / ".join(facts["learning_notices"])])
+                    " / ".join(facts["learning_notices"]),
+                    " / ".join(field for field, confirmed in facts["condition_confirmations"].items() if confirmed),
+                    "人工照合済み（原文位置の精度は変更なし）" if facts["source_confirmed"] else "人工照合記録なし",
+                    evidence, " / ".join(facts["metadata_notices"]),
+                    doc_review.get("historical_state", "") + " / " + " / ".join(issue_text(issue) for issue in doc_review.get("historical_issues", []))])
         for cell in row_audit[1]:
             cell.font = Font(bold=True, color="FFFFFF")
             cell.fill = PatternFill("solid", fgColor="25558A")
         row_audit.freeze_panes = "A2"
-        row_audit.auto_filter.ref = f"A1:N{row_audit.max_row}"
+        row_audit.auto_filter.ref = f"A1:S{row_audit.max_row}"
         widths = (32, 18, 16, 30, 25, 25, 17, 17, 20, 19, 46, 16, 29, 46)
         for column, width in enumerate(widths, 1):
             row_audit.column_dimensions[get_column_letter(column)].width = width

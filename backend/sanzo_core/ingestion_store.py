@@ -439,4 +439,6 @@ class IngestionStore:
                 """SELECT fee_id,display_name,name_version FROM sanzo_core.fees
                    WHERE tenant_id=%s AND NOT retired ORDER BY display_name,fee_id""", (actor.tenant_id,),
             ).fetchall()
+            from .quote_confirmations import attach_document_review_events
+            attach_document_review_events(conn, actor, docs)
             return {"case": case, "items": items, "documents": docs, "fees": fees, "tasks": tasks}

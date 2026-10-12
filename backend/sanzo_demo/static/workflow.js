@@ -175,7 +175,7 @@ async function startPendingBatch() {
   if (state.busy || state.selecting) return;
   await mutation(async () => {
     const caseId = state.selectedCase;
-    if (!caseId) throw new Error("案件を選択してください。");
+    if (!caseId) throw new Error("見積比較を選択してください。");
     await refreshRuntimeStatus();
     const pause = activeAIPause();
     if (pause && state.status?.reader_mode !== "REAL_SDK") throw new Error(aiFailureText(pause));

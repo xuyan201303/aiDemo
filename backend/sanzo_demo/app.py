@@ -100,14 +100,33 @@ class ConditionCorrectionBody(DTO):
     expected_memory_version: StrictInt = Field(ge=0)
     expected_memory_evidence: list[MemoryEvidenceBody] | None = Field(default=None, max_length=1000)
     idempotency_key: str = Field(min_length=1, max_length=200)
-    field: Literal["equipment", "billing_unit"]
+    field: Literal["equipment", "billing_unit", "charge_scope", "extra_terms"]
     value: str | None = Field(..., max_length=1024)
+    evidence_note: str | None = Field(default=None, min_length=1, max_length=2000)
+
+
+class QuoteConfirmationBody(DTO):
+    expected_case_revision: StrictInt = Field(ge=1)
+    expected_item_version: StrictInt = Field(ge=1)
+    idempotency_key: str = Field(min_length=1, max_length=200)
+    kind: Literal["CONDITION_VALUE", "SOURCE_REVIEW"]
+    field: Literal["equipment", "billing_unit", "charge_scope", "extra_terms"] | None = None
+    value: str | None = Field(default=None, max_length=1024)
+    evidence_note: str = Field(min_length=1, max_length=2000)
 
 
 class ProcessBody(DTO):
     idempotency_key: str = Field(min_length=1, max_length=200)
     field_bindings: dict[str, str] = Field(default_factory=dict, max_length=2)
     pause_ai: StrictBool = False
+
+
+class DocumentReviewBody(DTO):
+    expected_case_revision: StrictInt = Field(ge=1)
+    expected_review_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    confirmed_item_count: StrictInt = Field(ge=1, le=10000)
+    evidence_note: str = Field(min_length=1, max_length=2000)
+    idempotency_key: str = Field(min_length=1, max_length=200)
 
 
 class RevokeBody(DTO):
@@ -213,6 +232,9 @@ def create_app(dsn: str, storage_dir: str | Path, *, tenant_id: str = "local-dem
         snapshot["export_draft"] = export_review_state(
             snapshot["items"], snapshot["documents"], snapshot.get("tasks", []))[0]
         snapshot["comparison"] = comparison_projection(snapshot["items"], snapshot.get("fees", []), snapshot["documents"])
+        from .current_document_review import current_document_reviews
+        snapshot["document_reviews"] = current_document_reviews(
+            snapshot["items"], snapshot["documents"], snapshot.get("tasks", []))
         snapshot["documents"] = [public_document(d) for d in snapshot["documents"]]
         snapshot["tasks"] = [public_task(t) for t in snapshot["tasks"]]
         return snapshot
@@ -221,6 +243,12 @@ def create_app(dsn: str, storage_dir: str | Path, *, tenant_id: str = "local-dem
     def fee_rename_impact(case_id: str, fee_id: str):
         from .rename_impact import rename_impact
         return rename_impact(repository, actor, case_id, fee_id)
+
+    @app.post("/api/cases/{case_id}/documents/{document_id}/review")
+    def confirm_document(case_id: str, document_id: str, body: DocumentReviewBody):
+        from sanzo_core.quote_confirmations import DocumentReviewService, DocumentReviewCommand
+        return DocumentReviewService(repository, storage).confirm(actor, DocumentReviewCommand(
+            case_id=case_id, document_id=document_id, **body.model_dump()))
 
     @app.post("/api/cases/{case_id}/documents", status_code=201)
     async def upload(case_id: str, file: UploadFile = File(...)):
@@ -329,6 +357,12 @@ def create_app(dsn: str, storage_dir: str | Path, *, tenant_id: str = "local-dem
     def correct_conditions(case_id: str, row_id: str, item_id: str, body: ConditionCorrectionBody):
         from sanzo_core.condition_corrections import ConditionCorrectionService, ConditionCorrectionCommand
         return ConditionCorrectionService(repository).correct(actor, ConditionCorrectionCommand(
+            case_id=case_id, row_id=row_id, item_id=item_id, **body.model_dump()))
+
+    @app.post("/api/cases/{case_id}/comparison/{row_id}/members/{item_id}/quote-confirmation")
+    def confirm_quote_item(case_id: str, row_id: str, item_id: str, body: QuoteConfirmationBody):
+        from sanzo_core.quote_confirmations import QuoteConfirmationService, QuoteConfirmationCommand
+        return QuoteConfirmationService(repository, storage).confirm(actor, QuoteConfirmationCommand(
             case_id=case_id, row_id=row_id, item_id=item_id, **body.model_dump()))
 
     @app.post("/api/items/{item_id}/corrections")

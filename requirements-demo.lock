@@ -1,5 +1,6 @@
-# Exact Demo runtime, fixed SDK pdf/excel extras and HTTP test dependencies; Python 3.12.13.
+# Demo dependency pins, fixed SDK pdf/excel extras and HTTP test dependencies; Python 3.12.13.
 # SDK 1.8.0 is installed directly from the SHA-verified wheel by Dockerfile.demo.
+# Additional dependencies declared by the current SDK wheel are resolved by pip.
 annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1
