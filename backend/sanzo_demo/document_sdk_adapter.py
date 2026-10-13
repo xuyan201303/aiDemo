@@ -19,8 +19,8 @@ from zipfile import ZipFile
 from .extraction import ReadResult
 
 WHEEL_FILENAME = 'document_processing_sdk-1.8.0-py3-none-any.whl'
-WHEEL_SHA256 = '781161e4af3b0b45a1ca8a7745e774e1a2362eb01bcc30956e51619514fcc4e0'
-DEFAULT_WHEEL = Path(__file__).resolve().parents[2] / WHEEL_FILENAME
+WHEEL_SHA256 = 'd1dee21ff4b03c555cc1884270062bebc7267f14dec0ade287f5133fb3081ba0'
+DEFAULT_WHEEL = Path(__file__).resolve().parents[2] / 'sdk' / WHEEL_FILENAME
 VERSION = 'document-sdk-full-header-v1'
 # Exact complete header labels, not quote labels or expected answers.
 HEADERS = {

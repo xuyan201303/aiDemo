@@ -32,8 +32,8 @@ PG_VOLUME = PREFIX + "-postgres"
 UPLOAD_VOLUME = PREFIX + "-uploads"
 PG_IMAGE = "postgres:16"
 PYTHON_IMAGE = "python:3.12.13-slim"
-SDK_WHEEL = PROJECT / "document_processing_sdk-1.8.0-py3-none-any.whl"
-SDK_WHEEL_SHA256 = "781161e4af3b0b45a1ca8a7745e774e1a2362eb01bcc30956e51619514fcc4e0"
+SDK_WHEEL = PROJECT / "sdk" / "document_processing_sdk-1.8.0-py3-none-any.whl"
+SDK_WHEEL_SHA256 = "d1dee21ff4b03c555cc1884270062bebc7267f14dec0ade287f5133fb3081ba0"
 
 
 def verified_sdk_wheel():
@@ -135,9 +135,9 @@ class Runtime:
             json.dumps(fingerprints, indent=2))
         self.dk("docker_version", "version", "--format", "{{json .Server.Version}}")
         for base in [PG_IMAGE, PYTHON_IMAGE]:
-            if self.dk("image_available", "image", "inspect", base, required=False).returncode:
+            if self.dk("image_available", "image", "inspect", base, "--format", "{{.Id}}", required=False).returncode:
                 self.dk("pull_required_image", "pull", base)
-        if self.dk("demo_image_available", "image", "inspect", image, required=False).returncode:
+        if self.dk("demo_image_available", "image", "inspect", image, "--format", "{{.Id}}", required=False).returncode:
             with tempfile.TemporaryDirectory(prefix="sanzo_demo_build_") as folder:
                 context = Path(folder)
                 for name, source in members.items():

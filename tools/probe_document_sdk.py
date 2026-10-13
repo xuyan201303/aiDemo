@@ -14,11 +14,13 @@ from pathlib import Path
 import sys
 import time
 import traceback
+from zipfile import ZipFile
 
-WHEEL = Path(__file__).resolve().parents[1] / 'document_processing_sdk-1.8.0-py3-none-any.whl'
-EXPECTED_SHA = '781161e4af3b0b45a1ca8a7745e774e1a2362eb01bcc30956e51619514fcc4e0'
+WHEEL = Path(os.environ.get('SANZO_SDK_WHEEL_PATH', str(
+    Path(__file__).resolve().parents[1] / 'sdk' / 'document_processing_sdk-1.8.0-py3-none-any.whl')))
+EXPECTED_SHA = 'd1dee21ff4b03c555cc1884270062bebc7267f14dec0ade287f5133fb3081ba0'
 PROJECT = Path(__file__).resolve().parents[1]
-SAMPLES = ('01_A社_初回見積.xlsx', '02_B社_初回見積.pdf', '03_A社_次回見積.xlsx')
+SAMPLES = ('01_A社_初回見積.xlsx', '02_B社_初回見積.pdf', '03_C社_次回見積.xlsx')
 FORBIDDEN = '/Users/kyoen/Projects/document-processing-sdk'
 
 
@@ -88,12 +90,28 @@ def main():
         assert location.is_relative_to(Path(sys.prefix).resolve()), 'SDK_MUST_BE_INSTALLED_IN_ISOLATED_VENV'
         direct=json.loads(distribution.read_text('direct_url.json'))
         assert direct['url']==WHEEL.as_uri(), 'SDK_FIXED_WHEEL_ORIGIN_REQUIRED'
-        manifest['installation']={'version':distribution.version,'module_path':str(location),'wheel_sha256':EXPECTED_SHA,'direct_url':direct}
+        checked = 0
+        with ZipFile(WHEEL) as archive:
+            for member in archive.infolist():
+                if member.is_dir() or not member.filename.startswith('document_sdk/'):
+                    continue
+                installed = Path(distribution.locate_file(member.filename))
+                assert not installed.is_symlink() and installed.resolve().is_relative_to(location), 'FOREIGN_SDK_MEMBER'
+                assert installed.read_bytes() == archive.read(member), 'SDK_INSTALLED_FILE_MISMATCH'
+                checked += 1
+        assert checked, 'SDK_INSTALLED_MEMBERS_REQUIRED'
+        from document_sdk.pdf import analyze_pdf_local_first
+        assert callable(analyze_pdf_local_first)
+        manifest['installation']={'version':distribution.version,'module_path':str(location),'wheel_sha256':EXPECTED_SHA,'direct_url':direct,
+                                  'installed_file_check':'VERIFIED','installed_files_checked':checked,
+                                  'local_first_import':'PASS'}
         sample=PROJECT/'demo_materials/samples'/args.sample
         assert not sample.is_symlink() and sample.stat().st_size <= 25*1024*1024
         digest=sha256(sample.read_bytes()).hexdigest()
         declared=json.loads((PROJECT/'demo_materials/fixtures/manifest.json').read_text())
-        entry=next(e for e in declared['fixtures'] if e['sample_filename']==args.sample)
+        # The third original was renamed; preserve the sealed manifest bytes.
+        manifest_name = '03_A社_次回見積.xlsx' if args.sample == '03_C社_次回見積.xlsx' else args.sample
+        entry=next(e for e in declared['fixtures'] if e['sample_filename']==manifest_name)
         assert digest==entry['sample_sha256'], 'SAMPLE_BASELINE_HASH_MISMATCH'
         manifest['sample_sha256']=digest
         if sample.suffix=='.xlsx':

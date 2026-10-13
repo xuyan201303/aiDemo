@@ -1,4 +1,10 @@
-> 2026-10-12 SDK 构件更新：当前默认包为 `/Users/kyoen/Projects/aiDemo/document_processing_sdk-1.8.0-py3-none-any.whl`，元数据版本仍为 1.8.0，SHA256 为 `781161e4af3b0b45a1ca8a7745e774e1a2362eb01bcc30956e51619514fcc4e0`。启动、Adapter、Docker 构建和 probe 引用已同步；本次未重建或重启服务，新包运行尚未验证。下列历史验收仍对应当时的旧构件。
+> 2026-10-14 当前 SDK 绑定：`/Users/kyoen/Projects/aiDemo/sdk/document_processing_sdk-1.8.0-py3-none-any.whl`，版本 1.8.0，SHA256 `d1dee21ff4b03c555cc1884270062bebc7267f14dec0ade287f5133fb3081ba0`，交付 Commit `220a9ee228346d9b2cf9147966590808c10a4b39`。安装使用 `[pdf,excel]`；Adapter 保留既有 `ADVANCED_LOCAL` PDF 和 Excel 公共接口，不自动启用 HYBRID 或调用收费 AI。下列历史验收对应当时构件。
+
+当前 8765 使用历史 owner `86f1a16b19466ef8`。更新这套服务时，只调用 `tools/start_demo.py` 的 `Runtime.build` 构建，核验现有容器后受控替换同名 Web，复用原 PG、网络、上传卷和运行配置；不要直接执行默认 start/stop 或 `start_real_demo.py` 来管理这套历史实例，当前路径派生的 owner 不同。地址：<http://127.0.0.1:8765/cases>。本机构建、测试、备份和证据均使用已核验的 SANZO_TEST，任务环境设置 `TMPDIR=/Volumes/SANZO_TEST/private/tmp`，Python 使用 `-B`，不回退内置临时目录。
+
+本轮新包已在实际应用容器完成身份、依赖、真实 SDK 冒烟和浏览器验证；原数据与配置保留，服务保持运行，新增 Azure/OpenAI 调用均为 0。详见 [2026-10-14 受控替换记录](docs/SDK_1_8_0_220A9EE_DEPLOY_REVIEW.md)。
+
+> 2026-10-12 SDK 构件更新（历史记录）：当时默认包为 `/Users/kyoen/Projects/aiDemo/document_processing_sdk-1.8.0-py3-none-any.whl`，元数据版本仍为 1.8.0，SHA256 为 `781161e4af3b0b45a1ca8a7745e774e1a2362eb01bcc30956e51619514fcc4e0`。启动、Adapter、Docker 构建和 probe 引用已同步；该记录时尚未重建或重启服务。
 
 > 2026-09-14 SIMPLIFY_CORE_LEARNING_FLOW_R1：限定真实SDK两轮Demo通过。普通上传无公司／运输前置窗口；fee-name-v2按完整原词与可靠同行条件学习，保留旧REAL只读兼容和Mock隔离。首轮A/B为5组，B未知分类1次，重启后第三份5项记忆命中、AI0，新9500／旧8000／Excel一致。累计48/100，不重置额度。启动：`.demo-runtime/sdk-business-r1/.venv/bin/python tools/start_real_demo.py`。结果与边界见 [本轮报告](docs/SIMPLIFY_CORE_LEARNING_FLOW_R1_REPORT.md)。旧阶段状态和证据保持原样。
 
